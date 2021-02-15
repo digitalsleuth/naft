@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 __description__ = 'Network Appliance Forensic Toolkit - Packet and Frame Extraction Functions'
 __author__ = 'Didier Stevens'
@@ -55,7 +55,7 @@ class cFrames():
                 self.countFrames += 1
 
     def AddIPPacket(self, index, data, duplicates, filename=''):
-        if self.AddFramePrivate(index, '\x00\x00\x00\x00\x00\x00' + '\x00\x00\x00\x00\x00\x00' + '\x08\x00' + data, duplicates, filename):
+        if self.AddFramePrivate(index, b'\x00\x00\x00\x00\x00\x00' + b'\x00\x00\x00\x00\x00\x00' + b'\x08\x00' + data, duplicates, filename):
             self.countPackets += 1
 
     def WritePCAP(self, filename):
@@ -144,7 +144,7 @@ def CarryAroundAdd(a, b):
 def CalculateIPChecksum(data):
     s = 0
     for i in range(0, len(data), 2):
-        s = CarryAroundAdd(s, ord(data[i]) + (ord(data[i+1]) << 8))
+        s = CarryAroundAdd(s, data[i] + ((data[i+1]) << 8))
     return ~s & 0xffff
 
 # search for bytes between 0x45 and 0x4F (depending flag options) and check if they are the start op a IPv4 header by calculating and comparing the checksum
@@ -157,15 +157,15 @@ def ExtractIPPackets(oFrames, baseAddress, data, options, duplicates, multiple, 
     for headerStart in range(0x45, maxHeader):
         index = 0
         while index != -1:
-            index = data.find(chr(headerStart), index)
+            index = data.find(headerStart, index)
             if index != -1:
                 try:
-                    potentialIPHeader = data[index:index + 4 * (ord(data[index]) - 0x40)]
+                    potentialIPHeader = data[index:index + 4 * (data[index] - 0x40)]
                     if CalculateIPChecksum(potentialIPHeader) == 0:
-                        packetLength = ord(potentialIPHeader[2]) * 0x100 + ord(potentialIPHeader[3])
-                        if ord(data[index-2]) == 8 and ord(data[index-1]) == 0: # EtherType IP
+                        packetLength = potentialIPHeader[2] * 0x100 + potentialIPHeader[3]
+                        if data[index-2] == 8 and data[index-1] == 0: # EtherType IP
                             # IPv4 packet is inside an Ethernet frame; store the Ethernet frame
-                            if ord(data[index-6]) == 0x81 and ord(data[index-5]) == 0: # 802.1Q, assuming no double tagging
+                            if data[index-6] == 0x81 and data[index-5] == 0: # 802.1Q, assuming no double tagging
                                 oFrames.AddFrame(baseAddress + index - 2*6 - 4 - 2, data[index - 2*6 - 4 - 2:index + packetLength], duplicates, filename)
                                 found = True
                             else:
@@ -187,7 +187,7 @@ def ExtractARPFrames(oFrames, baseAddress, data, duplicates, multiple, filename=
     found = False
     index = 0
     while index != -1:
-        index = data.find('\x08\x06\x00\x01\x08\x00\x06\x04', index) # https://en.wikipedia.org/wiki/Address_Resolution_Protocol
+        index = data.find(b'\x08\x06\x00\x01\x08\x00\x06\x04', index) # https://en.wikipedia.org/wiki/Address_Resolution_Protocol
         if index != -1:
             oFrames.AddFrame(baseAddress + index - 2*6, data[index - 2*6:index + 30], duplicates, filename)
             found = True

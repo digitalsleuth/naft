@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 __description__ = 'Network Appliance Forensic Toolkit - IOS Image'
 __author__ = 'Didier Stevens'

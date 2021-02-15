@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 __description__ = 'Network Appliance Forensic Toolkit - Generic Frame Extraction'
 __author__ = 'Didier Stevens'
@@ -42,7 +42,7 @@ import time
 
 def ExtractIPPacketsFromFile(filenamePCAP, filenamesRawData, options):
     naft_uf.LogLine('Start')
-    if options.ouitxt == '':
+    if options.ouitxt == None:
         oFrames = naft_pfef.cFrames()
     else:
         oFrames = naft_pfef.cFrames(options.ouitxt)
