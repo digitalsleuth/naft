@@ -258,7 +258,7 @@ class cIOSMemoryParser:
             if oIOSMemoryBlockHeader.error != 0:
                 if oIOSMemoryBlockHeader.error == 4:
                     return False
-                print(('Error %d' % oIOSMemoryBlockHeader.error))
+                print('Error %d' % oIOSMemoryBlockHeader.error)
                 return False
 #            print(oIOSMemoryBlockHeader.ShowLine()) #d#
             self.Headers.append(oIOSMemoryBlockHeader)
@@ -279,9 +279,9 @@ class cIOSMemoryParser:
         return True
 
     def Show(self):
-        print((cIOSMemoryBlockHeader.ShowHeader))
+        print(cIOSMemoryBlockHeader.ShowHeader)
         for oIOSMemoryBlockHeader in self.Headers:
-            print((oIOSMemoryBlockHeader.ShowLine()))
+            print(oIOSMemoryBlockHeader.ShowLine())
 
     def ResolveNames(self, oIOSCoreDump):
         for address in self.dNames:

@@ -104,12 +104,12 @@ def DumpBytes(memory, baseAddress, WIDTH=16):
         else:
             lineASCII += '.'
         if iter % WIDTH == WIDTH - 1:
-            print((' %08X: %s %s' % (int(baseAddress + iter / WIDTH * WIDTH), lineHex, lineASCII)))
+            print(' %08X: %s %s' % (int(baseAddress + iter / WIDTH * WIDTH), lineHex, lineASCII))
             lineHex = ''
             lineASCII = ''
     if lineHex != '':
         lineHex += ' ' * (48 - len(lineHex))
-        print((' %08X: %s %s' % (int(baseAddress + iter / WIDTH * WIDTH), lineHex, lineASCII)))
+        print(' %08X: %s %s' % (int(baseAddress + iter / WIDTH * WIDTH), lineHex, lineASCII))
 
 def FindAllStrings(string, search):
     indices = []
@@ -141,7 +141,7 @@ def Timestamp(epoch=None):
     return '%04d%02d%02d-%02d%02d%02d' % localTime[0:6]
 
 def LogLine(line):
-    print(('%s: %s' % (Timestamp(), line)))
+    print('%s: %s' % (Timestamp(), line))
 
 class cBufferFile():
     def __init__(self, filename, buffersize, bufferoverlapsize):
