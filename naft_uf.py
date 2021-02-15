@@ -81,7 +81,6 @@ def SearchASCIIStrings(data, MIN_LENGTH = 5):
     dStrings = {}
     iStringStart = -1
     size = len(data)
-    #print(data)
     for iter in range(size):
         if data[iter] >= 20 and data[iter] <= 127:
             if iStringStart == -1:

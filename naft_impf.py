@@ -116,7 +116,6 @@ class cIOSCoreDump:
             return None
         string = ''
         iter = 0
-        #print(self.coredump[index + iter])
         while index + iter < self.size and self.coredump[index + iter] != 0 and iter < 50:
             string += chr(self.coredump[(index + iter)])
             iter += 1
@@ -254,7 +253,6 @@ class cIOSMemoryParser:
         index = 0
         while True:
             oIOSMemoryBlockHeader = cIOSMemoryBlockHeader(self.memory[index:index + self.headerSize + 24], self.headerSize, index, self.baseAddress, self)
-            #print(oIOSMemoryBlockHeader)
             if oIOSMemoryBlockHeader.error != 0:
                 if oIOSMemoryBlockHeader.error == 4:
                     return False
