@@ -26,7 +26,7 @@ Todo:
 """
 
 import struct
-from io import BytesIO as cStringIO
+from io import BytesIO
 import zipfile
 import hashlib
 import naft_uf
@@ -234,7 +234,7 @@ class cIOSImage:
         zipData = self.oSectionHeaderCompressedImage.sectionData[len(naft_impf.cCiscoMagic.STR_FEEDFACE) + 4*4:len(naft_impf.cCiscoMagic.STR_FEEDFACE) + 4*4 + self.sizeCompressed]
         self.calculatedChecksumCompressed = cIOSImage.CalcChecksum(zipData)
         try:
-            oZipFile = zipfile.ZipFile(cStringIO(zipData))
+            oZipFile = zipfile.ZipFile(BytesIO(zipData))
             try:
                 names = oZipFile.namelist()
             except:
@@ -284,7 +284,7 @@ class cIOSImage:
             print('Calculated checksum:   %s (%s)' % (naft_uf.cn(self.calculatedChecksumUncompressed, '0x%08X'), naft_uf.iif(self.checksumUncompressed == self.calculatedChecksumUncompressed, 'identical', 'DIFFERENT')))
 
     def Compress(self, filenameUncompressedImage, imageUncompressed):
-        oStringIO = cStringIO()
+        oStringIO = BytesIO()
         oZipFile = zipfile.ZipFile(oStringIO, 'w')
         oZipInfo = zipfile.ZipInfo(filenameUncompressedImage)
         oZipInfo.compress_type = zipfile.ZIP_DEFLATED
