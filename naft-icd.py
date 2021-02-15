@@ -165,6 +165,33 @@ def DecodeFunction(decoders, options, stream):
         return stream
     return decoders[0](stream, options.decoderoptions).Decode()
 
+def ProcessHeap(oIOSMemoryBlockHeader, options):
+    if not options.strings:
+        print(oIOSMemoryBlockHeader.ShowLine())
+    if options.strings:
+        dStrings = naft_uf.SearchASCIIStrings(oIOSMemoryBlockHeader.GetData())
+        if options.grep != '':
+            printHeader = True
+            for key, value in dStrings.items():
+                if value.find(options.grep.encode('utf-8')) >= 0:
+                    if printHeader:
+                        print(oIOSMemoryBlockHeader.ShowLine())
+                        printHeader = False
+                    print(' %08X: %s' % (
+                    oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.BlockSize + key, value.decode('utf-8')))
+        elif options.minimum == 0 or len(dStrings) >= options.minimum:
+            print(oIOSMemoryBlockHeader.ShowLine())
+            for key, value in dStrings.items():
+                print(' %08X: %s' % (
+                oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.BlockSize + key, value.decode('utf-8')))
+    if options.dump:
+        naft_uf.DumpBytes(oIOSMemoryBlockHeader.GetData(),
+                          oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.headerSize)
+    if options.dumpraw:
+        naft_uf.DumpBytes(oIOSMemoryBlockHeader.GetRawData(), oIOSMemoryBlockHeader.address)
+    if options.write:
+        naft_uf.Data2File(oIOSMemoryBlockHeader.GetData(), '%s-heap-0x%08X.data' % (coredumpFilename, oIOSMemoryBlockHeader.address))
+
 def IOSHeap(coredumpFilename, options):
     global decoders
     decoders = []
@@ -177,7 +204,7 @@ def IOSHeap(coredumpFilename, options):
         rules = YARACompile(options.yara)
 
     oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)
-    if oIOSCoreDump.error  != '':
+    if oIOSCoreDump.error != '':
         print(oIOSCoreDump.error)
         return
     addressHeap, memoryHeap = oIOSCoreDump.RegionHEAP()
@@ -187,64 +214,40 @@ def IOSHeap(coredumpFilename, options):
     oIOSMemoryParser = naft_impf.cIOSMemoryParser(memoryHeap)
     if options.resolve or options.filter != '':
         oIOSMemoryParser.ResolveNames(oIOSCoreDump)
-    if options.filter == '':
-        if options.write:
-            print(naft_impf.cIOSMemoryBlockHeader.ShowHeader)
-            for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers:
-                print(oIOSMemoryBlockHeader.ShowLine())
-                naft_uf.Data2File(oIOSMemoryBlockHeader.GetData(), '%s-heap-0x%08X.data' % (coredumpFilename, oIOSMemoryBlockHeader.address))
-        elif options.yara:
-            print(naft_impf.cIOSMemoryBlockHeader.ShowHeader)
-            for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers:
-                linePrinted = False
-                oDecoders = [cIdentity(oIOSMemoryBlockHeader.GetData(), None)]
-                for cDecoder in decoders:
-                    try:
-                        oDecoder = cDecoder(oIOSMemoryBlockHeader.GetData(), options.decoderoptions)
-                        oDecoders.append(oDecoder)
-                    except Exception as e:
-                        print('Error instantiating decoder: %s' % cDecoder.name)
-                        raise e
-                for oDecoder in oDecoders:
-                    while oDecoder.Available():
-                        for result in rules.match(data=oDecoder.Decode()):
-                            if not linePrinted:
-                                print(oIOSMemoryBlockHeader.ShowLine())
-                                linePrinted = True
-                            print(' YARA rule%s: %s' % (IFF(oDecoder.Name() == '', '', ' (decoder: %s)' % oDecoder.Name()), result.rule))
-                            if options.yarastrings:
-                                for stringdata in result.strings:
-                                    print('  %06x %s:' % (stringdata[0], stringdata[1]))
-                                    print('  %s' % binascii.hexlify(stringdata[2]))
-                                    print('  %s' % repr(stringdata[2]))
-        else:
-            oIOSMemoryParser.Show()
+    if options.yara:
+        print(naft_impf.cIOSMemoryBlockHeader.ShowHeader)
+        for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers:
+            linePrinted = False
+            oDecoders = [cIdentity(oIOSMemoryBlockHeader.GetData(), None)]
+            for cDecoder in decoders:
+                try:
+                    oDecoder = cDecoder(oIOSMemoryBlockHeader.GetData(), options.decoderoptions)
+                    oDecoders.append(oDecoder)
+                except Exception as e:
+                    print('Error instantiating decoder: %s' % cDecoder.name)
+                    raise e
+            for oDecoder in oDecoders:
+                while oDecoder.Available():
+                    for result in rules.match(data=oDecoder.Decode()):
+                        if not linePrinted:
+                            print(oIOSMemoryBlockHeader.ShowLine())
+                            linePrinted = True
+                        print(' YARA rule%s: %s' % (
+                        IFF(oDecoder.Name() == '', '', ' (decoder: %s)' % oDecoder.Name()), result.rule))
+                        if options.yarastrings:
+                            for stringdata in result.strings:
+                                print('  %06x %s:' % (stringdata[0], stringdata[1]))
+                                print('  %s' % binascii.hexlify(stringdata[2]))
+                                print('  %s' % repr(stringdata[2]))
+    elif options.filter == '':
+        print(naft_impf.cIOSMemoryBlockHeader.ShowHeader)
+        for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers:
+            ProcessHeap(oIOSMemoryBlockHeader, options)
     else:
         print(naft_impf.cIOSMemoryBlockHeader.ShowHeader)
         for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers:
             if oIOSMemoryBlockHeader.AllocNameResolved == options.filter:
-                if not options.strings:
-                    print(oIOSMemoryBlockHeader.ShowLine())
-                if options.strings:
-                    dStrings = naft_uf.SearchASCIIStrings(oIOSMemoryBlockHeader.GetData())
-                    if options.grep != '':
-                        printHeader = True
-                        for key, value in dStrings.items():
-                            if value.find(options.grep) >= 0:
-                                if printHeader:
-                                    print(oIOSMemoryBlockHeader.ShowLine())
-                                    printHeader = False
-                                print(' %08X: %s' % (oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.BlockSize + key, value))
-                    elif options.minimum == 0 or len(dStrings) >= options.minimum:
-                        print(oIOSMemoryBlockHeader.ShowLine())
-                        for key, value in dStrings.items():
-                            print(' %08X: %s' % (oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.BlockSize + key, value))
-                if options.dump:
-                    naft_uf.DumpBytes(oIOSMemoryBlockHeader.GetData(), oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.headerSize)
-                if options.dumpraw:
-                    naft_uf.DumpBytes(oIOSMemoryBlockHeader.GetRawData(), oIOSMemoryBlockHeader.address)
-                if options.write:
-                    naft_uf.Data2File(oIOSMemoryBlockHeader.GetData(), '%s-heap-0x%08X.data' % (coredumpFilename, oIOSMemoryBlockHeader.address))
+                ProcessHeap((oIOSMemoryBlockHeader,options))
 
 def IOSFrames(coredumpFilename, filenameIOMEM, filenamePCAP, options):
     oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)
@@ -392,11 +395,9 @@ def FilterInitBlocksForString(coredumpFilename, searchTerm):
     oIOSMemoryParser.ResolveNames(oIOSCoreDump)
     found = []
     for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers:
-        #print(oIOSMemoryBlockHeader.AllocNameResolved)
         if oIOSMemoryBlockHeader.AllocNameResolved == 'Init':
             dStrings = naft_uf.SearchASCIIStrings(oIOSMemoryBlockHeader.GetData())
             for value in dStrings.values():
-                #print(value)
                 if value.find(searchTerm) >= 0:
                     found.append(value)
     return found
