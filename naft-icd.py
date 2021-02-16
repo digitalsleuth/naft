@@ -54,7 +54,7 @@ except:
 
 def IOSRegions(coredumpFilename, options):
     oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)
-    if oIOSCoreDump.error  != '':
+    if oIOSCoreDump.error != None:
         print(oIOSCoreDump.error)
     else:
         print('Start      End        Size       Name')
@@ -204,7 +204,7 @@ def IOSHeap(coredumpFilename, options):
         rules = YARACompile(options.yara)
 
     oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)
-    if oIOSCoreDump.error != '':
+    if oIOSCoreDump.error != None:
         print(oIOSCoreDump.error)
         return
     addressHeap, memoryHeap = oIOSCoreDump.RegionHEAP()
@@ -251,7 +251,7 @@ def IOSHeap(coredumpFilename, options):
 
 def IOSFrames(coredumpFilename, filenameIOMEM, filenamePCAP, options):
     oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)
-    if oIOSCoreDump.error  != '':
+    if oIOSCoreDump.error  != None:
         print(oIOSCoreDump.error)
         return
     addressHeap, memoryHeap = oIOSCoreDump.RegionHEAP()
@@ -282,7 +282,7 @@ def IOSFrames(coredumpFilename, filenameIOMEM, filenamePCAP, options):
 
 def IOSCWStringsSub(data):
     oCWStrings = naft_impf.cCiscoCWStrings(data)
-    if oCWStrings.error != '':
+    if oCWStrings.error != None:
         print(oCWStrings.error)
         return
     keys = list(oCWStrings.dCWStrings.keys())
@@ -303,7 +303,7 @@ def IOSCWStrings(coredumpFilename, options):
             IOSCWStringsSub(coredump)
     else:
         oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)
-        if oIOSCoreDump.error  != '':
+        if oIOSCoreDump.error  != None:
             print(oIOSCoreDump.error)
             return
         addressData, memoryData = oIOSCoreDump.RegionDATA()
@@ -344,7 +344,7 @@ def PrintStatsAnalysis(dStats, oIOSCoreDump):
 
 def IOSProcesses(coredumpFilename, options):
     oIOSCoreDumpAnalysis = naft_impf.cIOSCoreDumpAnalysis(coredumpFilename)
-    if oIOSCoreDumpAnalysis.error != '':
+    if oIOSCoreDumpAnalysis.error != None:
         print(oIOSCoreDumpAnalysis.error)
         return
 
@@ -385,7 +385,7 @@ def IOSProcesses(coredumpFilename, options):
 
 def FilterInitBlocksForString(coredumpFilename, searchTerm):
     oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)
-    if oIOSCoreDump.error != '':
+    if oIOSCoreDump.error != None:
         return []
     addressHeap, memoryHeap = oIOSCoreDump.RegionHEAP()
     if memoryHeap == None:
@@ -417,7 +417,7 @@ def IOSEvents(coredumpFilename, options=None):
 
 def IOSCheckText(coredumpFilename, imageFilename, options):
     oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)
-    if oIOSCoreDump.error  != '':
+    if oIOSCoreDump.error  != None:
         print(oIOSCoreDump.error)
         return
     else:
@@ -429,7 +429,7 @@ def IOSCheckText(coredumpFilename, imageFilename, options):
         dataAddress, dataCoredump = oIOSCoreDump.RegionDATA()
         if dataCoredump != None:
             oCWStrings = naft_impf.cCiscoCWStrings(dataCoredump)
-            if oCWStrings.error == '' and b'CW_SYSDESCR' in oCWStrings.dCWStrings:
+            if oCWStrings.error == None and b'CW_SYSDESCR' in oCWStrings.dCWStrings:
                 sysdescrCoredump = oCWStrings.dCWStrings[b'CW_SYSDESCR'].decode('utf-8')
 
     image = naft_uf.File2Data(imageFilename)
@@ -441,7 +441,7 @@ def IOSCheckText(coredumpFilename, imageFilename, options):
     if oIOSImage.error != 0:
         return
     sysdescrImage = ''
-    if oIOSImage.oCWStrings != None and oIOSImage.oCWStrings.error == '' and b'CW_SYSDESCR' in oIOSImage.oCWStrings.dCWStrings:
+    if oIOSImage.oCWStrings != None and oIOSImage.oCWStrings.error == None and b'CW_SYSDESCR' in oIOSImage.oCWStrings.dCWStrings:
         sysdescrImage = oIOSImage.oCWStrings.dCWStrings[b'CW_SYSDESCR'].decode('utf-8')
     if sysdescrCoredump != '' or sysdescrImage != '':
         if sysdescrCoredump == sysdescrImage:
@@ -496,7 +496,7 @@ def IOSCheckText(coredumpFilename, imageFilename, options):
 # http://phrack.org/issues/60/7.html
 def IOSIntegrityText(coredumpFilename, options):
     oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)
-    if oIOSCoreDump.error  != '':
+    if oIOSCoreDump.error  != None:
         print(oIOSCoreDump.error)
         return
     addressHeap, memoryHeap = oIOSCoreDump.RegionHEAP()

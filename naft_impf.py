@@ -54,7 +54,7 @@ class cIOSCoreDump:
         self.Parse()
 
     def Parse(self):
-        self.error = ''
+        self.error = None
         self.coredump = naft_uf.File2Data(self.coredumpFilename)
         if self.coredump == None:
             self.error = 'Error reading coredump %s' % self.coredumpFilename
@@ -292,7 +292,7 @@ class cIOSMemoryParser:
 class cCiscoCWStrings:
     def __init__(self, data):
         self.data = data
-        self.error = ''
+        self.error = None
         self.dCWStrings = {}
         begin = naft_uf.FindAllStrings(self.data, cCiscoMagic.STR_CW_BEGIN)
         if len(begin) == 0:
@@ -381,7 +381,7 @@ class cIOSProcess:
         if dHeuristicsFields != {}:
             for key, value in dHeuristicsFields.items():
                 self.dFields[key] = value
-        self.error = ''
+        self.error = None
         self.processID = processID
         self.data = data
         self.indexProcessEnd = self.data.find(cCiscoMagic.STR_PROCESS_END)
@@ -505,10 +505,10 @@ class cIOSProcess:
 class cIOSCoreDumpAnalysis:
 
     def __init__(self, coredumpFilename):
-        self.error = ''
+        self.error = None
         self.RanHeuristics = False
         self.oIOSCoreDump = cIOSCoreDump(coredumpFilename)
-        if self.oIOSCoreDump.error != '':
+        if self.oIOSCoreDump.error != None:
             self.error = self.oIOSCoreDump.error
             return
         addressHeap, memoryHeap = self.oIOSCoreDump.RegionHEAP()
