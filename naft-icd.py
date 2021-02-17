@@ -165,7 +165,7 @@ def DecodeFunction(decoders, options, stream):
         return stream
     return decoders[0](stream, options.decoderoptions).Decode()
 
-def ProcessHeap(oIOSMemoryBlockHeader, options):
+def ProcessHeap(oIOSMemoryBlockHeader, options, coredumpFilename, wpath=None):
     if not options.strings:
         print(oIOSMemoryBlockHeader.ShowLine())
     if options.strings:
@@ -190,12 +190,17 @@ def ProcessHeap(oIOSMemoryBlockHeader, options):
     if options.dumpraw:
         naft_uf.DumpBytes(oIOSMemoryBlockHeader.GetRawData(), oIOSMemoryBlockHeader.address)
     if options.write:
-        naft_uf.Data2File(oIOSMemoryBlockHeader.GetData(), '%s-heap-0x%08X.data' % (coredumpFilename, oIOSMemoryBlockHeader.address))
-
+        naft_uf.Data2File(oIOSMemoryBlockHeader.GetData(), '%s-heap-0x%08X.data' % (coredumpFilename, oIOSMemoryBlockHeader.address), wpath)
+        if options.verbose:
+            print('\tFile: %s%s-heap-0x%08X.data created.\n' % (wpath, coredumpFilename, oIOSMemoryBlockHeader.address))
 def IOSHeap(coredumpFilename, options):
     global decoders
     decoders = []
     LoadDecoders(options.decoders, True)
+
+    if options.write != None:
+        wpath = os.path.join(options.write, "heap_data")
+        os.mkdir(wpath)
 
     if options.yara != None:
         if not 'yara' in sys.modules:
@@ -242,12 +247,12 @@ def IOSHeap(coredumpFilename, options):
     elif options.filter == '':
         print(naft_impf.cIOSMemoryBlockHeader.ShowHeader)
         for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers:
-            ProcessHeap(oIOSMemoryBlockHeader, options)
+            ProcessHeap(oIOSMemoryBlockHeader, options, coredumpFilename, wpath)
     else:
         print(naft_impf.cIOSMemoryBlockHeader.ShowHeader)
         for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers:
             if oIOSMemoryBlockHeader.AllocNameResolved == options.filter:
-                ProcessHeap((oIOSMemoryBlockHeader,options))
+                ProcessHeap(oIOSMemoryBlockHeader, options, coredumpFilename, wpath)
 
 def IOSFrames(coredumpFilename, filenameIOMEM, filenamePCAP, options):
     oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)
@@ -267,17 +272,18 @@ def IOSFrames(coredumpFilename, filenameIOMEM, filenamePCAP, options):
         print('Error parsing IOMEM')
         return
     oFrames = naft_pfef.cFrames()
-    print(naft_impf.cIOSMemoryBlockHeader.ShowHeader)
-    for oIOSMemoryBlockHeader in oIOSMemoryParserHeap.Headers:
-        if oIOSMemoryBlockHeader.AllocNameResolved == '*Packet Header*':
-            frameAddress = struct.unpack('>I', oIOSMemoryBlockHeader.GetData()[40:44])[0]
-            frameSize = struct.unpack('>H', oIOSMemoryBlockHeader.GetData()[72:74])[0]
-            if frameSize <= 1:
-                frameSize = struct.unpack('>H', oIOSMemoryBlockHeader.GetData()[68:70])[0]
-            if frameAddress != 0 and frameSize != 0:
-                print(oIOSMemoryBlockHeader.ShowLine())
-                naft_uf.DumpBytes(dataIOMEM[frameAddress - addressIOMEM : frameAddress - addressIOMEM + frameSize], frameAddress)
-                oFrames.AddFrame(frameAddress - addressIOMEM, dataIOMEM[frameAddress - addressIOMEM : frameAddress - addressIOMEM + frameSize], True)
+    if options.verbose:
+        print(naft_impf.cIOSMemoryBlockHeader.ShowHeader)
+        for oIOSMemoryBlockHeader in oIOSMemoryParserHeap.Headers:
+            if oIOSMemoryBlockHeader.AllocNameResolved == '*Packet Header*':
+                frameAddress = struct.unpack('>I', oIOSMemoryBlockHeader.GetData()[40:44])[0]
+                frameSize = struct.unpack('>H', oIOSMemoryBlockHeader.GetData()[72:74])[0]
+                if frameSize <= 1:
+                    frameSize = struct.unpack('>H', oIOSMemoryBlockHeader.GetData()[68:70])[0]
+                if frameAddress != 0 and frameSize != 0:
+                    print(oIOSMemoryBlockHeader.ShowLine())
+                    naft_uf.DumpBytes(dataIOMEM[frameAddress - addressIOMEM : frameAddress - addressIOMEM + frameSize], frameAddress)
+                    oFrames.AddFrame(frameAddress - addressIOMEM, dataIOMEM[frameAddress - addressIOMEM : frameAddress - addressIOMEM + frameSize], True)
     oFrames.WritePCAP(filenamePCAP)
 
 def IOSCWStringsSub(data):
@@ -407,13 +413,19 @@ def IOSHistory(coredumpFilename, options=None):
     for command in FilterInitBlocksForString(coredumpFilename, b'CMD: '):
         oMatch = re.search(b"'(.+)' (.+)", command)
         if oMatch:
-            history.append((oMatch.group(2).decode('utf-8'), oMatch.group(1).decode('utf-8')))
+            history.append((naft_uf.parse_dtg(oMatch.group(2).decode('utf-8')), oMatch.group(1).decode('utf-8')))
     for command in sorted(history, key=lambda x: x[0]):
-        print('%s: %s' % command)
+        print(f"{command[0].strftime('%Y %b %d %H:%M:%S')} (UTC) CMD: {command[1]}")
+
 
 def IOSEvents(coredumpFilename, options=None):
-    for event in sorted(FilterInitBlocksForString(coredumpFilename, b': %')):
-        print(event.decode('utf-8'))
+    events = []
+    for raw_event in FilterInitBlocksForString(coredumpFilename, b': %'):
+        dtg = naft_uf.parse_dtg(raw_event.decode('utf-8'))
+        data = raw_event[22:].decode('utf-8')
+        events.append((dtg, data))
+    for event in sorted(events, key=lambda x: x[0][0]):
+        print(f"{event[0][0].strftime('%Y %b %d %H:%M:%S')}.{event[0][1]} (UTC): {event[1]}")
 
 def IOSCheckText(coredumpFilename, imageFilename, options):
     oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)
@@ -547,12 +559,13 @@ def Main():
     oParser.add_option('-r', '--resolve', action='store_true', default=False, help='resolve names')
     oParser.add_option('-f', '--filter', default='', help='filter for given name')
     oParser.add_option('-a', '--raw', action='store_true', default=False, help='search in the whole file for CW_ strings')
-    oParser.add_option('-w', '--write', action='store_true', default=False, help='write the regions or heap blocks to disk')
+    oParser.add_option('-w', '--write', default=None, help='write the regions or heap blocks to path')
     oParser.add_option('-t', '--statistics', action='store_true', default=False, help='Print process structure statistics')
     oParser.add_option('-y', '--yara', help='YARA rule (or directory or @file) to check heaps')
     oParser.add_option('--yarastrings', action='store_true', default=False, help='Print YARA strings')
     oParser.add_option('--decoders', type=str, default='', help='decoders to load (separate decoders with a comma , ; @file supported)')
     oParser.add_option('--decoderoptions', type=str, default='', help='options for the decoder')
+    oParser.add_option('-v', '--verbose', action='store_true', default=False, help='Increase output verbosity')
     (options, args) = oParser.parse_args()
 
     dCommands = {

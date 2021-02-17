@@ -24,18 +24,23 @@ import time
 import os
 import zipfile
 import sys
+import datetime as dt
+import re
 
 MALWARE_PASSWORD = 'infected'
 
-#Convert 2 Bytes If Python 3
+
+# Convert 2 Bytes If Python 3
 def C2BIP3(string):
     if sys.version_info[0] > 2:
         return bytes([ord(x) for x in string])
     else:
         return string
 
+
 def IsZIPFile(filename):
     return filename.lower().endswith('.zip')
+
 
 def File2Data(filename):
     if IsZIPFile(filename):
@@ -64,9 +69,11 @@ def File2Data(filename):
     finally:
         f.close()
 
-def Data2File(data, filename):
+
+def Data2File(data, filename, path):
     try:
-        f = open(filename, 'wb')
+        full_path = os.path.join(path, filename)
+        f = open(full_path, 'wb')
     except:
         return False
     try:
@@ -77,7 +84,8 @@ def Data2File(data, filename):
         f.close()
     return True
 
-def SearchASCIIStrings(data, MIN_LENGTH = 5):
+
+def SearchASCIIStrings(data, MIN_LENGTH=5):
     dStrings = {}
     iStringStart = -1
     size = len(data)
@@ -92,6 +100,7 @@ def SearchASCIIStrings(data, MIN_LENGTH = 5):
                 dStrings[iter] = data[iStringStart:iter]
             iStringStart = -1
     return dStrings
+
 
 def DumpBytes(memory, baseAddress, WIDTH=16):
     lineHex = ''
@@ -110,6 +119,7 @@ def DumpBytes(memory, baseAddress, WIDTH=16):
         lineHex += ' ' * (48 - len(lineHex))
         print(' %08X: %s %s' % (int(baseAddress + iter / WIDTH * WIDTH), lineHex, lineASCII))
 
+
 def FindAllStrings(string, search):
     indices = []
     index = string.find(search)
@@ -118,19 +128,22 @@ def FindAllStrings(string, search):
         index = string.find(search, index + 1)
     return indices
 
+
 def iif(booleanExpression, valueTrue, valueFalse):
     if booleanExpression:
         return valueTrue
     else:
         return valueFalse
 
-def cn(value, format = None):
+
+def cn(value, format=None):
     if value == None:
         return 'Not found'
     elif format == None:
         return value
     else:
         return format % value
+
 
 def Timestamp(epoch=None):
     if epoch == None:
@@ -139,8 +152,10 @@ def Timestamp(epoch=None):
         localTime = time.localtime(epoch)
     return '%04d%02d%02d-%02d%02d%02d' % localTime[0:6]
 
+
 def LogLine(line):
     print('%s: %s' % (Timestamp(), line))
+
 
 class cBufferFile():
     def __init__(self, filename, buffersize, bufferoverlapsize):
@@ -202,3 +217,44 @@ class cBufferFile():
 
     def Progress(self):
         return int(float(self.bytesread) / float(self.filesize) * 100.0)
+
+
+months = {
+    "Jan": 1,
+    "Feb": 2,
+    "Mar": 3,
+    "Apr": 4,
+    "May": 5,
+    "Jun": 6,
+    "Jul": 7,
+    "Aug": 8,
+    "Sep": 9,
+    "Oct": 10,
+    "Nov": 11,
+    "Dec": 12
+}
+
+dtg_events = re.compile("([A-Za-z]{3})\s([\s\d]{2})\s(\d{2}):(\d{2}):(\d{2})\.(\d{3})")
+dtg_hist = re.compile("(\d{2}):(\d{2}):(\d{2})\s([A-Z]+)\s([A-Za-z]+)\s([A-Za-z]{3})\s([\s\d]+)\s(\d{4})")
+
+
+def parse_dtg(dtg_str):
+    if dtg_hist.match(dtg_str):
+        dtg = dtg_hist.match(dtg_str)
+        return dt.datetime(int(dtg.group(8)),  # year
+                            months[dtg.group(6)],  # Month
+                            int(dtg.group(7)),  # Day
+                            int(dtg.group(1)),  # Hour
+                            int(dtg.group(2)),  # Minutes
+                            int(dtg.group(3)) # Seconds
+                            )
+
+    else:
+        dtg = dtg_events.match(dtg_str[1:20])
+        return (dt.datetime(dt.date.today().year,  # Current year
+                            months[dtg.group(1)],  # Month
+                            int(dtg.group(2)),  # Day
+                            int(dtg.group(3)),  # Hour
+                            int(dtg.group(4)),  # Minutes
+                            int(dtg.group(5))  # Seconds
+                            ), dtg.group(6))  # Milliseconds
