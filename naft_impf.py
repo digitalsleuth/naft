@@ -207,9 +207,9 @@ class cIOSMemoryBlockHeader:
             PrevFree = '--------'
         else:
             PrevFree = '%-8s' % ('%X' % self.PrevFree)
-        return '%08X %010d %08X %08X %03d  %s %s %08X  %s' % (self.address, self.BlockSize, self.PrevBlock, self.NextBlock, self.RefCnt, PrevFree, NextFree, self.AllocPC, allocName)
+        return '%08X %010d %08X %08X %03d %s %s %08X %s' % (self.address, self.BlockSize, self.PrevBlock, self.NextBlock, self.RefCnt, PrevFree, NextFree, self.AllocPC, allocName)
 
-    ShowHeader = ' Address      Bytes     Prev     Next Ref     PrevF    NextF Alloc PC  what'
+    ShowHeader = 'Address\t Bytes\t    PrevBlk  NextBlk  Ref PrevFree NextFree Alloc PC What'
 
 class cIOSMemoryParser:
 
