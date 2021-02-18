@@ -29,15 +29,6 @@ import re
 
 MALWARE_PASSWORD = 'infected'
 
-
-# Convert 2 Bytes If Python 3
-def C2BIP3(string):
-    if sys.version_info[0] > 2:
-        return bytes([ord(x) for x in string])
-    else:
-        return string
-
-
 def IsZIPFile(filename):
     return filename.lower().endswith('.zip')
 
@@ -45,7 +36,7 @@ def IsZIPFile(filename):
 def File2Data(filename):
     if IsZIPFile(filename):
         oZipfile = zipfile.ZipFile(filename, 'r')
-        oZipContent = oZipfile.open(oZipfile.infolist()[0], 'r', C2BIP3(MALWARE_PASSWORD))
+        oZipContent = oZipfile.open(oZipfile.infolist()[0], 'r', MALWARE_PASSWORD)
         try:
             return oZipContent.read()
         except MemoryError:
@@ -241,9 +232,9 @@ dtg_hist = re.compile("(\d{2}):(\d{2}):(\d{2})\s([A-Z]+)\s([A-Za-z]+)\s([A-Za-z]
 def parse_dtg(dtg_str):
     if dtg_hist.match(dtg_str):
         dtg = dtg_hist.match(dtg_str)
-        return dt.datetime(int(dtg.group(8)),  # year
+        return dt.datetime(int(dtg.group(8)), # Year
                             months[dtg.group(6)],  # Month
-                            int(dtg.group(7)),  # Day
+                            int(dtg.group(7)), #Day
                             int(dtg.group(1)),  # Hour
                             int(dtg.group(2)),  # Minutes
                             int(dtg.group(3)) # Seconds
