@@ -180,7 +180,8 @@ def ProcessHeap(oIOSMemoryBlockHeader, options, coredumpFilename, wpath=None):
                     print(' {:08X}: {}'.format(
                     oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.BlockSize + key, value.decode('utf-8')))
         elif options.minimum == 0 or len(dStrings) >= options.minimum:
-            print(oIOSMemoryBlockHeader.ShowLine())
+            if options.verbose:
+                print(oIOSMemoryBlockHeader.ShowLine())
             for key, value in dStrings.items():
                 print(' {:08X}: {}'.format(
                 oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.BlockSize + key, value.decode('utf-8')))
@@ -419,7 +420,7 @@ def IOSHistory(coredumpFilename, options=None):
         if oMatch:
             history.append((naft_uf.parse_dtg(oMatch.group(2).decode('utf-8')), oMatch.group(1).decode('utf-8')))
     for command in sorted(history, key=lambda x: x[0]):
-        print(f"{command[0].strftime('%b %d %Y %H:%M:%S')} (UTC): {command[1]}")
+        print(f"{command[0].strftime('%b %d %Y %H:%M:%S')} UTC: {command[1]}")
 
 
 def IOSEvents(coredumpFilename, options=None):
@@ -429,7 +430,7 @@ def IOSEvents(coredumpFilename, options=None):
         data = raw_event[22:].decode('utf-8')
         events.append((dtg, data))
     for event in sorted(events, key=lambda x: x[0][0]):
-        print(f"{event[0][0].strftime('%b %d %Y %H:%M:%S')}.{event[0][1]} (UTC): {event[1]}")
+        print(f"{event[0][0].strftime('%b %d %Y %H:%M:%S')}.{event[0][1]} UTC: {event[1]}")
 
 def IOSCheckText(coredumpFilename, imageFilename, options):
     oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)

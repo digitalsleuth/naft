@@ -206,7 +206,7 @@ class cIOSImage:
         self.oELF = cELF(self.data)
         if self.oELF.error != 0:
             self.error = 1
-            print('ELF parsing error {}.'.format(self.oELF.error))
+            print('ELF parsing error {:d}.'.format(self.oELF.error))
             if self.oELF.error <= 2:
                 print('This is not an ELF file.')
             elif self.oELF.error < 5:
@@ -272,7 +272,7 @@ class cIOSImage:
 
         if self.oELF.error == 0:
             print('Entry point:           0x{:08X}'.format(self.oELF.addressEntry))
-            print('Number of sections:    {}'.format(self.oELF.countSections))
+            print('Number of sections:    {:d}'.format(self.oELF.countSections))
             print('Embedded MD5:          {}'.format(naft_uf.cn(self.embeddedMD5)))
 #           print('Calculated MD5:        %s' % naft_uf.cn(self.calculatedMD5))
             print('Compressed size:       %s' % naft_uf.cn(self.sizeCompressed, '%d'))
