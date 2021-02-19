@@ -97,18 +97,18 @@ def DumpBytes(memory, baseAddress, WIDTH=16):
     lineHex = ''
     lineASCII = ''
     for iter in range(len(memory)):
-        lineHex += '%02X ' % memory[iter]
+        lineHex += '{:02X} '.format(memory[iter])
         if chr(memory[iter]) >= '\x20' and chr(memory[iter]) <= '\x7F':
             lineASCII += chr(memory[iter])
         else:
             lineASCII += '.'
         if iter % WIDTH == WIDTH - 1:
-            print(' %08X: %s %s' % (int(baseAddress + iter / WIDTH * WIDTH), lineHex, lineASCII))
+            print(' {:08X}: {} {}'.format(int(baseAddress + iter / WIDTH * WIDTH), lineHex, lineASCII))
             lineHex = ''
             lineASCII = ''
     if lineHex != '':
         lineHex += ' ' * (48 - len(lineHex))
-        print(' %08X: %s %s' % (int(baseAddress + iter / WIDTH * WIDTH), lineHex, lineASCII))
+        print(' {:08X}: {} {}'.format(int(baseAddress + iter / WIDTH * WIDTH), lineHex, lineASCII))
 
 
 def FindAllStrings(string, search):
@@ -145,7 +145,7 @@ def Timestamp(epoch=None):
 
 
 def LogLine(line):
-    print('%s: %s' % (Timestamp(), line))
+    print('{}: {}'.format((Timestamp(), line)))
 
 
 class cBufferFile():
