@@ -286,7 +286,17 @@ def IOSFrames(coredumpFilename, filenameIOMEM, filenamePCAP, options):
                     print(oIOSMemoryBlockHeader.ShowLine())
                     naft_uf.DumpBytes(dataIOMEM[frameAddress - addressIOMEM : frameAddress - addressIOMEM + frameSize], frameAddress)
                     oFrames.AddFrame(frameAddress - addressIOMEM, dataIOMEM[frameAddress - addressIOMEM : frameAddress - addressIOMEM + frameSize], True)
-    oFrames.WritePCAP(filenamePCAP)
+        oFrames.WritePCAP(filenamePCAP)
+    else:
+        for oIOSMemoryBlockHeader in oIOSMemoryParserHeap.Headers:
+            if oIOSMemoryBlockHeader.AllocNameResolved == '*Packet Header*':
+                frameAddress = struct.unpack('>I', oIOSMemoryBlockHeader.GetData()[40:44])[0]
+                frameSize = struct.unpack('>H', oIOSMemoryBlockHeader.GetData()[72:74])[0]
+                if frameSize <= 1:
+                    frameSize = struct.unpack('>H', oIOSMemoryBlockHeader.GetData()[68:70])[0]
+                if frameAddress != 0 and frameSize != 0:
+                    oFrames.AddFrame(frameAddress - addressIOMEM, dataIOMEM[frameAddress - addressIOMEM : frameAddress - addressIOMEM + frameSize], True)
+        oFrames.WritePCAP(filenamePCAP)        
 
 def IOSCWStringsSub(data):
     oCWStrings = naft_impf.cCiscoCWStrings(data)
