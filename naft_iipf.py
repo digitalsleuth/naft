@@ -206,7 +206,7 @@ class cIOSImage:
         self.oELF = cELF(self.data)
         if self.oELF.error != 0:
             self.error = 1
-            print('ELF parsing error %d.' % self.oELF.error)
+            print('ELF parsing error {:d}.'.format(self.oELF.error))
             if self.oELF.error <= 2:
                 print('This is not an ELF file.')
             elif self.oELF.error < 5:
@@ -268,13 +268,13 @@ class cIOSImage:
         if self.oCWStrings != None and self.oCWStrings.error == '':
             for key in ['CW_VERSION', 'CW_FAMILY', 'CW_FEATURE', 'CW_IMAGE', 'CW_SYSDESCR']:
                 if key in self.oCWStrings.dCWStrings:
-                    print('%s:%s%s' % (key, ' ' * (22 - len(key)), self.oCWStrings.dCWStrings[key]))
+                    print('{}:{}{}'.format(key, ' ' * (22 - len(key)), self.oCWStrings.dCWStrings[key]))
 
         if self.oELF.error == 0:
-            print('Entry point:           0x%08X' % self.oELF.addressEntry)
-            print('Number of sections:    %d' % self.oELF.countSections)
-            print('Embedded MD5:          %s' % naft_uf.cn(self.embeddedMD5))
-#            print('Calculated MD5:        %s' % naft_uf.cn(self.calculatedMD5))
+            print('Entry point:           0x{:08X}'.format(self.oELF.addressEntry))
+            print('Number of sections:    {:d}'.format(self.oELF.countSections))
+            print('Embedded MD5:          {}'.format(naft_uf.cn(self.embeddedMD5)))
+#           print('Calculated MD5:        %s' % naft_uf.cn(self.calculatedMD5))
             print('Compressed size:       %s' % naft_uf.cn(self.sizeCompressed, '%d'))
             print('Checksum compressed:   %s' % naft_uf.cn(self.checksumCompressed, '0x%08X'))
             print('Calculated checksum:   %s (%s)' % (naft_uf.cn(self.calculatedChecksumCompressed, '0x%08X'), naft_uf.iif(self.checksumCompressed == self.calculatedChecksumCompressed, 'identical', 'DIFFERENT')))
@@ -346,7 +346,7 @@ class cMD5Database():
             result = self.AddCSV(filenameCSV)
             countDoubles += result[0]
             countMD5EmptyString += result[1]
-        print('%d unique entries in md5 database, %d doubles of which %d empty string' % (len(self.dMD5Database), countDoubles, countMD5EmptyString))
+        print('{} unique entries in md5 database, %d doubles of which {} empty string'.format(len(self.dMD5Database), countDoubles, countMD5EmptyString))
 
     def AddCSV(self, filenameCSV):
         countDoubles = 0

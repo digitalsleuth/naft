@@ -180,7 +180,8 @@ def ProcessHeap(oIOSMemoryBlockHeader, options, coredumpFilename, wpath=None):
                     print(' {:08X}: {}'.format(
                     oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.BlockSize + key, value.decode('utf-8')))
         elif options.minimum == 0 or len(dStrings) >= options.minimum:
-            print(oIOSMemoryBlockHeader.ShowLine())
+            if options.verbose:
+                print(oIOSMemoryBlockHeader.ShowLine())
             for key, value in dStrings.items():
                 print(' {:08X}: {}'.format(
                 oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.BlockSize + key, value.decode('utf-8')))
@@ -193,6 +194,7 @@ def ProcessHeap(oIOSMemoryBlockHeader, options, coredumpFilename, wpath=None):
         naft_uf.Data2File(oIOSMemoryBlockHeader.GetData(), '{}-heap-0x{:08X}.data'.format(coredumpFilename, oIOSMemoryBlockHeader.address), wpath)
         if options.verbose:
             print('\tFile: {}{}-heap-0x{:08X}.data created.\n'.format(wpath, coredumpFilename, oIOSMemoryBlockHeader.address))
+
 def IOSHeap(coredumpFilename, options):
     #global decoders
     #decoders = []
@@ -276,27 +278,18 @@ def IOSFrames(coredumpFilename, filenameIOMEM, filenamePCAP, options):
     oFrames = naft_pfef.cFrames()
     if options.verbose:
         print(naft_impf.cIOSMemoryBlockHeader.ShowHeader)
-        for oIOSMemoryBlockHeader in oIOSMemoryParserHeap.Headers:
-            if oIOSMemoryBlockHeader.AllocNameResolved == '*Packet Header*':
-                frameAddress = struct.unpack('>I', oIOSMemoryBlockHeader.GetData()[40:44])[0]
-                frameSize = struct.unpack('>H', oIOSMemoryBlockHeader.GetData()[72:74])[0]
-                if frameSize <= 1:
-                    frameSize = struct.unpack('>H', oIOSMemoryBlockHeader.GetData()[68:70])[0]
-                if frameAddress != 0 and frameSize != 0:
+    for oIOSMemoryBlockHeader in oIOSMemoryParserHeap.Headers:
+        if oIOSMemoryBlockHeader.AllocNameResolved == '*Packet Header*':
+            frameAddress = struct.unpack('>I', oIOSMemoryBlockHeader.GetData()[40:44])[0]
+            frameSize = struct.unpack('>H', oIOSMemoryBlockHeader.GetData()[72:74])[0]
+            if frameSize <= 1:
+                frameSize = struct.unpack('>H', oIOSMemoryBlockHeader.GetData()[68:70])[0]
+            if frameAddress != 0 and frameSize != 0:
+                if options.verbose:
                     print(oIOSMemoryBlockHeader.ShowLine())
                     naft_uf.DumpBytes(dataIOMEM[frameAddress - addressIOMEM : frameAddress - addressIOMEM + frameSize], frameAddress)
-                    oFrames.AddFrame(frameAddress - addressIOMEM, dataIOMEM[frameAddress - addressIOMEM : frameAddress - addressIOMEM + frameSize], True)
-        oFrames.WritePCAP(filenamePCAP)
-    else:
-        for oIOSMemoryBlockHeader in oIOSMemoryParserHeap.Headers:
-            if oIOSMemoryBlockHeader.AllocNameResolved == '*Packet Header*':
-                frameAddress = struct.unpack('>I', oIOSMemoryBlockHeader.GetData()[40:44])[0]
-                frameSize = struct.unpack('>H', oIOSMemoryBlockHeader.GetData()[72:74])[0]
-                if frameSize <= 1:
-                    frameSize = struct.unpack('>H', oIOSMemoryBlockHeader.GetData()[68:70])[0]
-                if frameAddress != 0 and frameSize != 0:
-                    oFrames.AddFrame(frameAddress - addressIOMEM, dataIOMEM[frameAddress - addressIOMEM : frameAddress - addressIOMEM + frameSize], True)
-        oFrames.WritePCAP(filenamePCAP)        
+                oFrames.AddFrame(frameAddress - addressIOMEM, dataIOMEM[frameAddress - addressIOMEM : frameAddress - addressIOMEM + frameSize], True)
+    oFrames.WritePCAP(filenamePCAP)
 
 def IOSCWStringsSub(data):
     oCWStrings = naft_impf.cCiscoCWStrings(data)
@@ -427,7 +420,7 @@ def IOSHistory(coredumpFilename, options=None):
         if oMatch:
             history.append((naft_uf.parse_dtg(oMatch.group(2).decode('utf-8')), oMatch.group(1).decode('utf-8')))
     for command in sorted(history, key=lambda x: x[0]):
-        print(f"{command[0].strftime('%Y %b %d %H:%M:%S')} UTC: {command[1]}")
+        print(f"{command[0].strftime('%b %d %Y %H:%M:%S')} UTC: {command[1]}")
 
 
 def IOSEvents(coredumpFilename, options=None):
@@ -437,7 +430,7 @@ def IOSEvents(coredumpFilename, options=None):
         data = raw_event[22:].decode('utf-8')
         events.append((dtg, data))
     for event in sorted(events, key=lambda x: x[0][0]):
-        print(f"{event[0][0].strftime('%Y %b %d %H:%M:%S')}.{event[0][1]} UTC: {event[1]}")
+        print(f"{event[0][0].strftime('%b %d %Y %H:%M:%S')}.{event[0][1]} UTC: {event[1]}")
 
 def IOSCheckText(coredumpFilename, imageFilename, options):
     oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)

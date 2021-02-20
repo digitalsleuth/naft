@@ -29,7 +29,6 @@ Todo:
 
 import struct
 import re
-import binascii
 import naft_uf
 
 class cCiscoMagic:
@@ -57,19 +56,19 @@ class cIOSCoreDump:
         self.error = None
         self.coredump = naft_uf.File2Data(self.coredumpFilename)
         if self.coredump == None:
-            self.error = 'Error reading coredump %s' % self.coredumpFilename
+            self.error = 'Error reading coredump {}'.format(self.coredumpFilename)
             return
         indexRegionsMetaData = self.coredump.find(cCiscoMagic.STR_REGIONS)
         if indexRegionsMetaData < 0:
-            self.error = 'Magic sequence %s not found' % binascii.b2a_hex(cCiscoMagic.STR_REGIONS).upper()
+            self.error = 'Magic sequence {} not found'.format(cCiscoMagic.STR_REGIONS.hex().upper())
             return
         if self.coredump[indexRegionsMetaData + 4:indexRegionsMetaData + 4 + 4] != b'\x00\x00\x00\x05':
-            self.error = 'Unexpected data found: %s' % binascii.b2a_hex(self.coredump[indexRegionsMetaData + 4:indexRegionsMetaData + 4 + 4])
+            self.error = 'Unexpected data found: {}'.format(self.coredump[indexRegionsMetaData + 4:indexRegionsMetaData + 4 + 4].hex())
             return
         addresses = struct.unpack('>IIII', self.coredump[indexRegionsMetaData + 20:indexRegionsMetaData + 20 + 4 * 4])
         indexHeap = self.coredump.find(cCiscoMagic.STR_BLOCK_BEGIN, addresses[3] - addresses[0])
         if indexHeap < 0:
-            self.error = 'Magic sequence %s not found' % binascii.b2a_hex(cCiscoMagic.STR_BLOCK_BEGIN).upper()
+            self.error = 'Magic sequence {} not found'.format(cCiscoMagic.STR_BLOCK_BEGIN.hex().upper())
             return
         self.address = addresses[0]
         self.size = len(self.coredump)
@@ -196,18 +195,18 @@ class cIOSMemoryBlockHeader:
 
     def ShowLine(self):
         if self.AllocNameResolved == '':
-            allocName = '%08X'% self.AllocName
+            allocName = '{:08X}'.format(self.AllocName)
         else:
             allocName = self.AllocNameResolved
         if self.NextFree == None:
             NextFree = '--------'
         else:
-            NextFree = '%-8s' % ('%X' % self.NextFree)
+            NextFree = '{:->8s}'.format('{:X}'.format(self.NextFree))
         if self.PrevFree == None:
             PrevFree = '--------'
         else:
-            PrevFree = '%-8s' % ('%X' % self.PrevFree)
-        return '%08X %010d %08X %08X %03d %s %s %08X %s' % (self.address, self.BlockSize, self.PrevBlock, self.NextBlock, self.RefCnt, PrevFree, NextFree, self.AllocPC, allocName)
+            PrevFree = '{:->8s}'.format('{:X}'.format(self.PrevFree))
+        return '{:08X} {:010d} {:08X} {:08X} {:03d} {} {} {:08X} {}'.format(self.address, self.BlockSize, self.PrevBlock, self.NextBlock, self.RefCnt, PrevFree, NextFree, self.AllocPC, allocName)
 
     ShowHeader = 'Address\t Bytes\t    PrevBlk  NextBlk  Ref PrevFree NextFree Alloc PC What'
 
@@ -256,7 +255,7 @@ class cIOSMemoryParser:
             if oIOSMemoryBlockHeader.error != 0:
                 if oIOSMemoryBlockHeader.error == 4:
                     return False
-                print('Error %d' % oIOSMemoryBlockHeader.error)
+                print('Error {:d}'.format(oIOSMemoryBlockHeader.error))
                 return False
 #            print(oIOSMemoryBlockHeader.ShowLine()) #d#
             self.Headers.append(oIOSMemoryBlockHeader)
@@ -390,7 +389,7 @@ class cIOSProcess:
             return
         if not self.IsSupportedProcessStructure():
             self.addressProcessName = None
-            self.error = 'Error: unexpected process structure, length = %d' % self.indexProcessEnd
+            self.error = 'Error: unexpected process structure, length = {:d}'.format(self.indexProcessEnd)
         else:
             self.SetFields()
 
@@ -430,11 +429,11 @@ class cIOSProcess:
 
     def SetField(self, fieldName):
         if self.dFields[self.indexProcessEnd][fieldName] == None:
-            exec('self.%s = None' % fieldName)
+            exec('self.{} = None'.format(fieldName))
         else:
             format, position = self.dFields[self.indexProcessEnd][fieldName]
             fieldValue = struct.unpack(format, self.data[position:position + 4])[0]
-            exec('self.%s = fieldValue' % fieldName)
+            exec('self.{} = fieldValue'.format(fieldName))
 
     def SetFields(self):
         for fieldName in self.dFields[self.indexProcessEnd]:
@@ -474,7 +473,7 @@ class cIOSProcess:
         if self.PC == None:
             line += '???????? '
         else:
-            line += '%08X ' % self.PC
+            line += '{:08X} '.format(self.PC)
         if self.Runtime == None:
             line += '       ? '
         else:
