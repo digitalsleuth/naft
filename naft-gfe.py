@@ -50,7 +50,7 @@ def ExtractIPPacketsFromFile(filenamePCAP, filenamesRawData, options):
 
     for filenameRawData in filenamesRawData:
         if options.buffer:
-            naft_uf.LogLine('Buffering file {}'.format(filenameRawData)
+            naft_uf.LogLine('Buffering file {}'.format(filenameRawData))
             oBufferFile = naft_uf.cBufferFile(filenameRawData, options.buffersize * 1024 * 1024, options.bufferoverlapsize * 1024 * 1024)
             while oBufferFile.Read():
                 naft_uf.LogLine('Processing buffer 0x%x size %d MB %d%%' % (oBufferFile.index, len(oBufferFile.buffer) / 1024 / 1024, oBufferFile.Progress()))
