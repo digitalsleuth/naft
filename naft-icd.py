@@ -61,8 +61,8 @@ def IOSRegions(coredumpFilename, options):
         for region in oIOSCoreDump.regions:
             if region[2] != None:
                 print('0x{:08X} 0x{:08X} {:<10d} {}'.format(region[1], (region[1] + region[2] - 1), region[2], region[0]))
-                if options.write:
-                    naft_uf.Data2File(oIOSCoreDump.Region(region[0])[1], '{}-{}-0x{:08X}'.format(coredumpFilename, region[0], region[1]))
+                if options.output:
+                    naft_uf.Data2File(oIOSCoreDump.Region(region[0])[1], '{}-{}-0x{:08X}'.format(os.path.basename(coredumpFilename), region[0], region[1]), options.output)
             else:
                 print('0x{:08X} {} {}'.format(region[1], ' ' * 21, region[0]))
         addressBSS, dataBSS = oIOSCoreDump.RegionBSS()
@@ -190,7 +190,7 @@ def ProcessHeap(oIOSMemoryBlockHeader, options, coredumpFilename, wpath=None):
                           oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.headerSize)
     if options.dumpraw:
         naft_uf.DumpBytes(oIOSMemoryBlockHeader.GetRawData(), oIOSMemoryBlockHeader.address)
-    if options.write:
+    if options.output:
         naft_uf.Data2File(oIOSMemoryBlockHeader.GetData(), '{}-heap-0x{:08X}.data'.format(coredumpFilename, oIOSMemoryBlockHeader.address), wpath)
         if options.verbose:
             print('\tFile: {}{}-heap-0x{:08X}.data created.\n'.format(wpath, coredumpFilename, oIOSMemoryBlockHeader.address))
@@ -200,8 +200,8 @@ def IOSHeap(coredumpFilename, options):
     #decoders = []
     #LoadDecoders(options.decoders, True)
 
-    if options.write != None:
-        wpath = os.path.join(options.write, "heap_data")
+    if options.output != None:
+        wpath = os.path.join(options.output, "heap_data")
         os.mkdir(wpath)
     else:
         wpath = ''
@@ -560,11 +560,11 @@ def Main():
     oParser.add_option('-D', '--dumpraw', action='store_true', default=False, help='dump raw data')
     oParser.add_option('-s', '--strings', action='store_true', default=False, help='dump strings in data')
     oParser.add_option('-m', '--minimum', type=int, default=0, help='minimum count number of strings')
-    oParser.add_option('-g', '--grep', default='', help='grep strings')
+    oParser.add_option('-g', '--grep', default='', metavar='STRING', help='grep strings')
     oParser.add_option('-r', '--resolve', action='store_true', default=False, help='resolve names')
     oParser.add_option('-f', '--filter', default='', help='filter for given name')
     oParser.add_option('-a', '--raw', action='store_true', default=False, help='search in the whole file for CW_ strings')
-    oParser.add_option('-w', '--write', default=None, help='write the regions or heap blocks to path')
+    oParser.add_option('-o', '--output', default=None, metavar='PATH', help='output the regions or heap blocks to path')
     oParser.add_option('-t', '--statistics', action='store_true', default=False, help='Print process structure statistics')
     #oParser.add_option('-y', '--yara', help='YARA rule (or directory or @file) to check heaps')
     #oParser.add_option('--yarastrings', action='store_true', default=False, help='Print YARA strings')
@@ -574,13 +574,13 @@ def Main():
     (options, args) = oParser.parse_args()
 
     dCommands = {
-                    'regions':        (2, IOSRegions,       'coredump: identify regions in core dump, options w'),
-                    'cwstrings':      (2, IOSCWStrings,     'coredump: extract CW_ strings, options a'),
-                    'heap':           (2, IOSHeap,          'coredump: list heap linked list, options rfdsgmwD'),
+                    'regions':        (2, IOSRegions,       'coredump: identify regions in core dump - options o'),
+                    'cwstrings':      (2, IOSCWStrings,     'coredump: extract CW_ strings - options a'),
+                    'heap':           (2, IOSHeap,          'coredump: list heap linked list - options rfdsgmoD'),
                     'history':        (2, IOSHistory,       'coredump: list command history'),
                     'events':         (2, IOSEvents,        'coredump: list events'),
                     'frames':         (4, IOSFrames,        'coredump iomem pcap-file: extract frames and store them in pcap-file'),
-                    'processes':      (2, IOSProcesses,     'coredump: list processes, options fdt'),
+                    'processes':      (2, IOSProcesses,     'coredump: list processes - options fdt'),
                     'checktext':      (3, IOSCheckText,     'coredump image: compare the text section in memory and image'),
                     'integritycheck': (2, IOSIntegrityText, 'coredump: check the integrity of the heap'),
                 }
