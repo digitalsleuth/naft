@@ -36,6 +36,7 @@ Todo:
 import optparse
 import glob
 import struct
+import naft_impf
 import naft_uf
 import naft_pfef
 import time
@@ -53,7 +54,7 @@ def ExtractIPPacketsFromFile(filenamePCAP, filenamesRawData, options):
             naft_uf.LogLine('Buffering file {}'.format(filenameRawData))
             oBufferFile = naft_uf.cBufferFile(filenameRawData, options.buffersize * 1024 * 1024, options.bufferoverlapsize * 1024 * 1024)
             while oBufferFile.Read():
-                naft_uf.LogLine('Processing buffer 0x%x size %d MB %d%%' % (oBufferFile.index, len(oBufferFile.buffer) / 1024 / 1024, oBufferFile.Progress()))
+                naft_uf.LogLine('Processing buffer 0x{:x} size {:d} MB {:d}%'.format(oBufferFile.index, len(oBufferFile.buffer) / 1024 / 1024, oBufferFile.Progress()))
                 naft_uf.LogLine('Searching for IPv4 packets')
                 naft_pfef.ExtractIPPackets(oFrames, oBufferFile.index, oBufferFile.buffer, options.options, options.duplicates, True, filenameRawData)
                 naft_uf.LogLine('Searching for ARP Ethernet frames')
@@ -92,9 +93,50 @@ def ExtractIPPacketsFromFile(filenamePCAP, filenamesRawData, options):
                 naft_uf.LogLine('Error writing 010 template file')
 
     naft_uf.LogLine('Done')
+    
+def IOSFrames(coredumpFilename, filenameIOMEM, filenamePCAP, options):
+    naft_uf.LogLine('Start')
+    naft_uf.LogLine('Reading file {}'.format(coredumpFilename))
+    oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)
+    if oIOSCoreDump.error != None:
+        print(oIOSCoreDump.error)
+        return
+    naft_uf.LogLine('Searching for heap region')
+    addressHeap, memoryHeap = oIOSCoreDump.RegionHEAP()
+    if memoryHeap == None:
+        print('Heap region not found')
+        return
+    oIOSMemoryParserHeap = naft_impf.cIOSMemoryParser(memoryHeap)
+    oIOSMemoryParserHeap.ResolveNames(oIOSCoreDump)
+    naft_uf.LogLine('Reading file {}'.format(filenameIOMEM))
+    dataIOMEM = naft_uf.File2Data(filenameIOMEM)
+    naft_uf.LogLine('Searching for base address from {}'.format(filenameIOMEM))
+    oIOSMemoryParserIOMEM = naft_impf.cIOSMemoryParser(dataIOMEM)
+    addressIOMEM = oIOSMemoryParserIOMEM.baseAddress
+    if addressIOMEM == None:
+        print('Error parsing IOMEM')
+        return
+    oFrames = naft_pfef.cFrames()
+    if options.verbose:
+        print(naft_impf.cIOSMemoryBlockHeader.ShowHeader)
+    for oIOSMemoryBlockHeader in oIOSMemoryParserHeap.Headers:
+        if oIOSMemoryBlockHeader.AllocNameResolved == '*Packet Header*':
+            frameAddress = struct.unpack('>I', oIOSMemoryBlockHeader.GetData()[40:44])[0]
+            frameSize = struct.unpack('>H', oIOSMemoryBlockHeader.GetData()[72:74])[0]
+            if frameSize <= 1:
+                frameSize = struct.unpack('>H', oIOSMemoryBlockHeader.GetData()[68:70])[0]
+            if frameAddress != 0 and frameSize != 0:
+                if options.verbose:
+                    print(oIOSMemoryBlockHeader.ShowLine())
+                    naft_uf.DumpBytes(dataIOMEM[frameAddress - addressIOMEM : frameAddress - addressIOMEM + frameSize], frameAddress)
+                oFrames.AddFrame(frameAddress - addressIOMEM, dataIOMEM[frameAddress - addressIOMEM : frameAddress - addressIOMEM + frameSize], True)
+    oFrames.WritePCAP(filenamePCAP)
+    naft_uf.LogLine('{:d} frames written to {}'.format(oFrames.countFrames, filenamePCAP))
+    naft_uf.LogLine('Done')
 
 def Main():
-    oParser = optparse.OptionParser(usage='usage: %prog [options] pcapfile dump ...\n' + __description__, version='%prog ' + __version__)
+    oParser = optparse.OptionParser(usage='usage: %prog [options] pcapfile dump [iomem]\n' + __description__, version='%prog ' + __version__)
+    oParser.add_option('-f', '--frames', help='extract frames from coredump and iomem')
     oParser.add_option('-d', '--duplicates', action='store_true', default=False, help='include duplicates')
     oParser.add_option('-t', '--template', help='filename for the 010 Editor template to generate')
     oParser.add_option('-p', '--options', action='store_true', default=False, help='Search for IPv4 headers with options')
@@ -102,8 +144,9 @@ def Main():
     oParser.add_option('-b', '--buffer', action='store_true', default=False, help='Buffer file in 100MB blocks with 1MB overlap')
     oParser.add_option('-S', '--buffersize', type='int', default=100, help='Size of buffer in MB (default 100MB)')
     oParser.add_option('-O', '--bufferoverlapsize', default=1, help='Size of buffer overlap in MB (default 1MB)')
+    oParser.add_option('-v', '--verbose', action='store_true', default=False, help='Increase output verbosity - frames only')
     (options, args) = oParser.parse_args()
-
+    
     if len(args) < 2:
         oParser.print_help()
         print('')
@@ -117,7 +160,16 @@ def Main():
         if options.template and len(filenames) > 1:
             print('Only one dump file allowed with option template')
             return
-        ExtractIPPacketsFromFile(args[0], filenames, options)
+        elif options.frames:
+            pcapfile = options.frames
+            dumpfiles = args[0:]
+            if len(dumpfiles) < 2:
+                print('Frame extraction requires coredump and iomem')
+                return
+            else:
+                IOSFrames(args[0], args[1], pcapfile, options)
+        else:
+            ExtractIPPacketsFromFile(args[0], filenames, options)
 
 if __name__ == '__main__':
     Main()

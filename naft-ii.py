@@ -38,7 +38,7 @@ def CiscoIOSImageFileParser(filename, options):
 
     image = naft_uf.File2Data(filename)
     if image == None:
-        print('Error reading %s' % filename)
+        print('Error reading {}'.format(filename))
         return
 
     oIOSImage = naft_iipf.cIOSImage(image)
@@ -50,11 +50,11 @@ def CiscoIOSImageFileParser(filename, options):
         if filenameCSV == None:
             print('File not found in md5 database')
         else:
-            print('File found in md5 database %s %s' % (filenameCSV, filenameDB))
+            print('File found in md5 database {} {}'.format(filenameCSV, filenameDB))
 
     if options.verbose:
         for oSectionHeader in oIOSImage.oELF.sections:
-            print(' %2d %-7s %d %d %08X %10d %s' % (oSectionHeader.nameIndex, oSectionHeader.nameIndexString, oSectionHeader.type, oSectionHeader.flags, oSectionHeader.offset, oSectionHeader.size, repr(oSectionHeader.sectionData[0:8])))
+            print(' {:2d} {:->7s} {:d} {:d} {:08X} {:10d} {}'.format(oSectionHeader.nameIndex, oSectionHeader.nameIndexString, oSectionHeader.type, oSectionHeader.flags, oSectionHeader.offset, oSectionHeader.size, repr(oSectionHeader.sectionData[0:8])))
 
     if options.extract:
         naft_uf.Data2File(oIOSImage.imageUncompressed, oIOSImage.imageUncompressedName)
@@ -131,7 +131,7 @@ def CiscoIOSImageFileScanner(filewildcard, options):
                     line.extend([naft_uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, 'CW_VERSION')), naft_uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, 'CW_FAMILY'))])
                 else:
                     line.extend([naft_uf.cn(None), naft_uf.cn(None)])
-                line.extend([str(len(image)), '%.2f' % Entropy(image), str(oIOSImage.error), str(oIOSImage.oELF.error), str(oIOSImage.oELF.countSections), str(naft_uf.cn(oIOSImage.oELF.stringTableIndex)), naft_uf.cn(oIOSImage.checksumCompressed, '0x%08X'), str(oIOSImage.checksumCompressed != None and oIOSImage.checksumCompressed == oIOSImage.calculatedChecksumCompressed), naft_uf.cn(oIOSImage.checksumUncompressed, '0x%08X'), str(oIOSImage.checksumUncompressed != None and oIOSImage.checksumUncompressed == oIOSImage.calculatedChecksumUncompressed), naft_uf.cn(oIOSImage.imageUncompressedName), naft_uf.cn(oIOSImage.embeddedMD5)])
+                line.extend([str(len(image)), '{:.2f}'.format(Entropy(image)), str(oIOSImage.error), str(oIOSImage.oELF.error), str(oIOSImage.oELF.countSections), str(naft_uf.cn(oIOSImage.oELF.stringTableIndex)), naft_uf.cn(oIOSImage.checksumCompressed, '0x%08X'), str(oIOSImage.checksumCompressed != None and oIOSImage.checksumCompressed == oIOSImage.calculatedChecksumCompressed), naft_uf.cn(oIOSImage.checksumUncompressed, '0x%08X'), str(oIOSImage.checksumUncompressed != None and oIOSImage.checksumUncompressed == oIOSImage.calculatedChecksumUncompressed), naft_uf.cn(oIOSImage.imageUncompressedName), naft_uf.cn(oIOSImage.embeddedMD5)])
                 if options.md5db:
                     md5hash = hashlib.md5(image).hexdigest()
                     filenameCSV, filenameDB = oMD5Database.Find(md5hash)

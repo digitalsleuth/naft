@@ -145,7 +145,7 @@ def Timestamp(epoch=None):
 
 
 def LogLine(line):
-    print('{}: {}'.format((Timestamp(), line)))
+    print('{}: {}'.format(Timestamp(), line))
 
 
 class cBufferFile():

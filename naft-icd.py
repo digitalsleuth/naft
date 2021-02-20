@@ -47,10 +47,6 @@ import naft_uf
 import naft_impf
 import naft_pfef
 import naft_iipf
-#try:
-    #import yara
-#except:
-    #pass
 
 def IOSRegions(coredumpFilename, options):
     oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)
@@ -66,20 +62,6 @@ def IOSRegions(coredumpFilename, options):
             else:
                 print('0x{:08X} {} {}'.format(region[1], ' ' * 21, region[0]))
         addressBSS, dataBSS = oIOSCoreDump.RegionBSS()
-
-# CIC: Call If Callable
-def CIC(expression):
-    if callable(expression):
-        return expression()
-    else:
-        return expression
-
-# IFF: IF Function
-def IFF(expression, valueTrue, valueFalse):
-    if expression:
-        return CIC(valueTrue)
-    else:
-        return CIC(valueFalse)
 
 def File2Strings(filename):
     try:
@@ -102,68 +84,6 @@ def ProcessAt(argument):
             return strings
     else:
         return [argument]
-
-#def YARACompile(fileordirname):
-    #dFilepaths = {}
-    #if os.path.isdir(fileordirname):
-        #for root, dirs, files in os.walk(fileordirname):
-            #for file in files:
-                #filename = os.path.join(root, file)
-                #dFilepaths[filename] = filename
-    #else:
-        #for filename in ProcessAt(fileordirname):
-            #dFilepaths[filename] = filename
-    #return yara.compile(filepaths=dFilepaths)
-
-#def AddDecoder(cClass):
-    #global decoders
-
-    #decoders.append(cClass)
-
-#class cDecoderParent():
-    #pass
-
-#def LoadDecoders(decoders, verbose):
-    #if decoders == '':
-        #return
-    #scriptPath = os.path.dirname(sys.argv[0])
-    #for decoder in sum(list(map(ProcessAt, decoders.split(','))), []):
-        #try:
-            #if not decoder.lower().endswith('.py'):
-                #decoder += '.py'
-            #if os.path.dirname(decoder) == '':
-                #if not os.path.exists(decoder):
-                    #scriptDecoder = os.path.join(scriptPath, decoder)
-                    #if os.path.exists(scriptDecoder):
-                        #decoder = scriptDecoder
-            #exec (open(decoder, 'r') in globals(), globals())
-        #except Exception as e:
-            #print('Error loading decoder: %s' % decoder)
-            #if verbose:
-                #raise e
-
-#class cIdentity(cDecoderParent):
-    #name = 'Identity function decoder'
-
-    #def __init__(self, stream, options):
-        #self.stream = stream
-        #self.options = options
-        #self.available = True
-
-    #def Available(self):
-        #return self.available
-
-    #def Decode(self):
-        #self.available = False
-        #return self.stream
-
-    #def Name(self):
-        #return ''
-
-#def DecodeFunction(decoders, options, stream):
-    #if decoders == []:
-        #return stream
-    #return decoders[0](stream, options.decoderoptions).Decode()
 
 def ProcessHeap(oIOSMemoryBlockHeader, options, coredumpFilename, wpath=None):
     if not options.strings:
@@ -196,21 +116,12 @@ def ProcessHeap(oIOSMemoryBlockHeader, options, coredumpFilename, wpath=None):
             print('\tFile: {}{}-heap-0x{:08X}.data created.\n'.format(wpath, coredumpFilename, oIOSMemoryBlockHeader.address))
 
 def IOSHeap(coredumpFilename, options):
-    #global decoders
-    #decoders = []
-    #LoadDecoders(options.decoders, True)
 
     if options.output != None:
         wpath = os.path.join(options.output, "heap_data")
         os.mkdir(wpath)
     else:
         wpath = ''
-
-    #if options.yara != None:
-        #if not 'yara' in sys.modules:
-            #print('Error: option yara requires the YARA Python module.')
-            #return
-        #rules = YARACompile(options.yara)
 
     oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)
     if oIOSCoreDump.error != None:
@@ -223,31 +134,6 @@ def IOSHeap(coredumpFilename, options):
     oIOSMemoryParser = naft_impf.cIOSMemoryParser(memoryHeap)
     if options.resolve or options.filter != '':
         oIOSMemoryParser.ResolveNames(oIOSCoreDump)
-    #if options.yara:
-        #print(naft_impf.cIOSMemoryBlockHeader.ShowHeader)
-        #for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers:
-            #linePrinted = False
-            #oDecoders = [cIdentity(oIOSMemoryBlockHeader.GetData(), None)]
-            #for cDecoder in decoders:
-                #try:
-                    #oDecoder = cDecoder(oIOSMemoryBlockHeader.GetData(), options.decoderoptions)
-                    #oDecoders.append(oDecoder)
-                #except Exception as e:
-                    #print('Error instantiating decoder: %s' % cDecoder.name)
-                    #raise e
-            #for oDecoder in oDecoders:
-                #while oDecoder.Available():
-                    #for result in rules.match(data=oDecoder.Decode()):
-                        #if not linePrinted:
-                            #print(oIOSMemoryBlockHeader.ShowLine())
-                            #linePrinted = True
-                        #print(' YARA rule%s: %s' % (
-                        #IFF(oDecoder.Name() == '', '', ' (decoder: %s)' % oDecoder.Name()), result.rule))
-                        #if options.yarastrings:
-                            #for stringdata in result.strings:
-                                #print('  %06x %s:' % (stringdata[0], stringdata[1]))
-                                #print('  %s' % binascii.hexlify(stringdata[2]))
-                                #print('  %s' % repr(stringdata[2]))
     elif options.filter == '':
         print(naft_impf.cIOSMemoryBlockHeader.ShowHeader)
         for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers:
@@ -566,10 +452,6 @@ def Main():
     oParser.add_option('-a', '--raw', action='store_true', default=False, help='search in the whole file for CW_ strings')
     oParser.add_option('-o', '--output', default=None, metavar='PATH', help='output the regions or heap blocks to path')
     oParser.add_option('-t', '--statistics', action='store_true', default=False, help='Print process structure statistics')
-    #oParser.add_option('-y', '--yara', help='YARA rule (or directory or @file) to check heaps')
-    #oParser.add_option('--yarastrings', action='store_true', default=False, help='Print YARA strings')
-    #oParser.add_option('--decoders', type=str, default='', help='decoders to load (separate decoders with a comma , ; @file supported)')
-    #oParser.add_option('--decoderoptions', type=str, default='', help='options for the decoder')
     oParser.add_option('-v', '--verbose', action='store_true', default=False, help='Increase output verbosity')
     (options, args) = oParser.parse_args()
 
@@ -579,7 +461,7 @@ def Main():
                     'heap':           (2, IOSHeap,          'coredump: list heap linked list - options rfdsgmoD'),
                     'history':        (2, IOSHistory,       'coredump: list command history'),
                     'events':         (2, IOSEvents,        'coredump: list events'),
-                    'frames':         (4, IOSFrames,        'coredump iomem pcap-file: extract frames and store them in pcap-file'),
+                    #'frames':         (4, IOSFrames,        'coredump iomem pcap-file: extract frames and store them in pcap-file'),
                     'processes':      (2, IOSProcesses,     'coredump: list processes - options fdt'),
                     'checktext':      (3, IOSCheckText,     'coredump image: compare the text section in memory and image'),
                     'integritycheck': (2, IOSIntegrityText, 'coredump: check the integrity of the heap'),
