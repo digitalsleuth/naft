@@ -50,7 +50,7 @@ def ExtractIPPacketsFromFile(filenamePCAP, filenamesRawData, options):
 
     for filenameRawData in filenamesRawData:
         if options.buffer:
-            naft_uf.LogLine('Buffering file %s' % filenameRawData)
+            naft_uf.LogLine('Buffering file {}'.format(filenameRawData))
             oBufferFile = naft_uf.cBufferFile(filenameRawData, options.buffersize * 1024 * 1024, options.bufferoverlapsize * 1024 * 1024)
             while oBufferFile.Read():
                 naft_uf.LogLine('Processing buffer 0x%x size %d MB %d%%' % (oBufferFile.index, len(oBufferFile.buffer) / 1024 / 1024, oBufferFile.Progress()))
@@ -64,7 +64,7 @@ def ExtractIPPacketsFromFile(filenamePCAP, filenamesRawData, options):
                 naft_uf.LogLine('Error reading file')
             countProcessedFiles += 1
         else:
-            naft_uf.LogLine('Reading file %s' % filenameRawData)
+            naft_uf.LogLine('Reading file {}'.format(filenameRawData))
             rawData = naft_uf.File2Data(filenameRawData)
             if rawData == None:
                 naft_uf.LogLine('Error reading file')
@@ -78,16 +78,16 @@ def ExtractIPPacketsFromFile(filenamePCAP, filenamesRawData, options):
                 countProcessedFiles += 1
 
     if countProcessedFiles > 0:
-        naft_uf.LogLine('Writing PCAP file %s' % filenamePCAP)
+        naft_uf.LogLine('Writing PCAP file {}'.format(filenamePCAP))
         if not oFrames.WritePCAP(filenamePCAP):
             naft_uf.LogLine('Error writing PCAP file')
 
-        naft_uf.LogLine('Number of identified frames:   %5d' % oFrames.countFrames)
-        naft_uf.LogLine('Number of identified packets:  %5d' % oFrames.countPackets)
-        naft_uf.LogLine('Number of frames in PCAP file: %5d' % len(oFrames.frames))
+        naft_uf.LogLine('Number of identified frames:   {:5d}'.format(oFrames.countFrames))
+        naft_uf.LogLine('Number of identified packets:  {:5d}'.format(oFrames.countPackets))
+        naft_uf.LogLine('Number of frames in PCAP file: {:5d}'.format(len(oFrames.frames)))
 
         if options.template:
-            naft_uf.LogLine('Writing 010 template file %s' % options.template)
+            naft_uf.LogLine('Writing 010 template file {}'.format(options.template))
             if not oFrames.Write010Template(options.template):
                 naft_uf.LogLine('Error writing 010 template file')
 
