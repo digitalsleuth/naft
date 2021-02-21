@@ -257,7 +257,6 @@ class cIOSMemoryParser:
                     return False
                 print('Error {:d}'.format(oIOSMemoryBlockHeader.error))
                 return False
-#            print(oIOSMemoryBlockHeader.ShowLine()) #d#
             self.Headers.append(oIOSMemoryBlockHeader)
             self.dHeadersAddressData[oIOSMemoryBlockHeader.addressData] = oIOSMemoryBlockHeader
             if oIOSMemoryBlockHeader.NextBlock == 0:
@@ -380,7 +379,7 @@ class cIOSProcess:
         if dHeuristicsFields != {}:
             for key, value in dHeuristicsFields.items():
                 self.dFields[key] = value
-        self.error = None
+        self.error = ''
         self.processID = processID
         self.data = data
         self.indexProcessEnd = self.data.find(cCiscoMagic.STR_PROCESS_END)

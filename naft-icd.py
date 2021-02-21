@@ -144,39 +144,6 @@ def IOSHeap(coredumpFilename, options):
             if oIOSMemoryBlockHeader.AllocNameResolved == options.filter:
                 ProcessHeap(oIOSMemoryBlockHeader, options, coredumpFilename, wpath)
 
-def IOSFrames(coredumpFilename, filenameIOMEM, filenamePCAP, options):
-    oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)
-    if oIOSCoreDump.error  != None:
-        print(oIOSCoreDump.error)
-        return
-    addressHeap, memoryHeap = oIOSCoreDump.RegionHEAP()
-    if memoryHeap == None:
-        print('Heap region not found')
-        return
-    oIOSMemoryParserHeap = naft_impf.cIOSMemoryParser(memoryHeap)
-    oIOSMemoryParserHeap.ResolveNames(oIOSCoreDump)
-    dataIOMEM = naft_uf.File2Data(filenameIOMEM)
-    oIOSMemoryParserIOMEM = naft_impf.cIOSMemoryParser(dataIOMEM)
-    addressIOMEM = oIOSMemoryParserIOMEM.baseAddress
-    if addressIOMEM == None:
-        print('Error parsing IOMEM')
-        return
-    oFrames = naft_pfef.cFrames()
-    if options.verbose:
-        print(naft_impf.cIOSMemoryBlockHeader.ShowHeader)
-    for oIOSMemoryBlockHeader in oIOSMemoryParserHeap.Headers:
-        if oIOSMemoryBlockHeader.AllocNameResolved == '*Packet Header*':
-            frameAddress = struct.unpack('>I', oIOSMemoryBlockHeader.GetData()[40:44])[0]
-            frameSize = struct.unpack('>H', oIOSMemoryBlockHeader.GetData()[72:74])[0]
-            if frameSize <= 1:
-                frameSize = struct.unpack('>H', oIOSMemoryBlockHeader.GetData()[68:70])[0]
-            if frameAddress != 0 and frameSize != 0:
-                if options.verbose:
-                    print(oIOSMemoryBlockHeader.ShowLine())
-                    naft_uf.DumpBytes(dataIOMEM[frameAddress - addressIOMEM : frameAddress - addressIOMEM + frameSize], frameAddress)
-                oFrames.AddFrame(frameAddress - addressIOMEM, dataIOMEM[frameAddress - addressIOMEM : frameAddress - addressIOMEM + frameSize], True)
-    oFrames.WritePCAP(filenamePCAP)
-
 def IOSCWStringsSub(data):
     oCWStrings = naft_impf.cCiscoCWStrings(data)
     if oCWStrings.error != None:
@@ -461,7 +428,6 @@ def Main():
                     'heap':           (2, IOSHeap,          'coredump: list heap linked list - options rfdsgmoD'),
                     'history':        (2, IOSHistory,       'coredump: list command history'),
                     'events':         (2, IOSEvents,        'coredump: list events'),
-                    #'frames':         (4, IOSFrames,        'coredump iomem pcap-file: extract frames and store them in pcap-file'),
                     'processes':      (2, IOSProcesses,     'coredump: list processes - options fdt'),
                     'checktext':      (3, IOSCheckText,     'coredump image: compare the text section in memory and image'),
                     'integritycheck': (2, IOSIntegrityText, 'coredump: check the integrity of the heap'),
