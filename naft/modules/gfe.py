@@ -57,11 +57,6 @@ def ExtractIPPacketsFromFile(filenamesRawData, filenamePCAP, options):
         uf.LogLine('Number of identified packets:  {:5d}'.format(oFrames.countPackets))
         uf.LogLine('Number of frames in PCAP file: {:5d}'.format(len(oFrames.frames)))
 
-        if options['template']:
-            uf.LogLine('Writing 010 template file {}'.format(options['template']))
-            if not oFrames.Write010Template(options['template']):
-                uf.LogLine('Error writing 010 template file')
-
     uf.LogLine('Done')
 
 def IOSFrames(coredumpFilename, filenameIOMEM, filenamePCAP, options):

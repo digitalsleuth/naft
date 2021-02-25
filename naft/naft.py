@@ -63,7 +63,6 @@ def main():
     networkGroup.add_argument('--pcap', required=False, metavar='PCAP_FILE', help='path and filename for the desired PCAP output')
 
     networkGroup.add_argument('--duplicates', action='store_true', default=False, help='include duplicates')
-    networkGroup.add_argument('-T', '--template', help='filename for the 010 Editor template to generate')
     networkGroup.add_argument('-p', '--options', action='store_true', default=False, help='Search for IPv4 headers with options')
     networkGroup.add_argument('-t', '--ouitxt', help='ouitxt filename to filter MAC addresses with unknown ID')
     networkGroup.add_argument('-b', '--buffer', action='store_true', default=False, help='Buffer file in 100MB blocks with 1MB overlap')

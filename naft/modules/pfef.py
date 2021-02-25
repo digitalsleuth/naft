@@ -70,41 +70,6 @@ class cFrames():
 
         return True
 
-    def Write010Template(self, filename):
-        countUnknowns = 1
-        countFrames = 1
-        try:
-            f = open(filename, 'w')
-        except:
-            return False
-
-        f.write('// Generated\n')
-        f.write('local int iCOLOR = 0x95E8FF; // Color used for highlighting\n')
-        f.write('local int iToggleColor = iCOLOR;\n')
-        f.write('void ToggleBackColor()\n')
-        f.write('{\n')
-        f.write('	if (iToggleColor == iCOLOR)\n')
-        f.write('		iToggleColor = cNone;\n')
-        f.write('	else\n')
-        f.write('		iToggleColor = iCOLOR;\n')
-        f.write('	SetBackColor(iToggleColor);\n')
-        f.write('}\n')
-
-        index = 0
-        for frame in sorted(self.frames, key=lambda x: x[0]):
-            if frame[0] > index:
-                f.write('ToggleBackColor();\n')
-                f.write('BYTE unknown%d[%d];\n' % (countUnknowns, frame[0] - index))
-                countUnknowns += 1
-                f.write('ToggleBackColor();\n')
-                f.write('BYTE frame%d[%d];\n' % (countFrames, len(frame[1])))
-                countFrames += 1
-                index = frame[0] + len(frame[1])
-
-        f.close()
-
-        return True
-
     def ParseOUITXT(self, ouiFilename):
         self.dOUI = {}
         if ouiFilename != None:
