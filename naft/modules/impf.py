@@ -5,31 +5,9 @@ __author__ = 'Didier Stevens'
 __version__ = '0.0.9'
 __date__ = '2014/10/24'
 
-"""
-
-Source code put in public domain by Didier Stevens, no Copyright
-https://DidierStevens.com
-Use at your own risk
-
-History:
-  2011/12/05: start
-  2011/12/12: added GetAddressFromFilename
-  2012/01/25: Added cIOSCoreDump
-  2012/01/27: added cIOSProcess
-  2012/01/30: added process parameters
-  2012/01/31: added process parameters
-  2012/02/10: V0.0.2: fixed cIOSCoreDump.Parse detection for IOS 15.1
-  2012/02/13: V0.0.3: added heuristics
-  2012/02/15: continued heuristics
-  2014/09/19: 0.0.4 change priorities
-  2014/10/24: V0.0.9: added GetRawData method
-
-Todo:
-"""
-
 import struct
 import re
-import naft_uf
+import naft.modules.uf as uf
 
 class cCiscoMagic:
     STR_REGIONS      = b'\xDE\xAD\x12\x34'
@@ -54,7 +32,7 @@ class cIOSCoreDump:
 
     def Parse(self):
         self.error = None
-        self.coredump = naft_uf.File2Data(self.coredumpFilename)
+        self.coredump = uf.File2Data(self.coredumpFilename)
         if self.coredump == None:
             self.error = 'Error reading coredump {}'.format(self.coredumpFilename)
             return
@@ -292,14 +270,14 @@ class cCiscoCWStrings:
         self.data = data
         self.error = None
         self.dCWStrings = {}
-        begin = naft_uf.FindAllStrings(self.data, cCiscoMagic.STR_CW_BEGIN)
+        begin = uf.FindAllStrings(self.data, cCiscoMagic.STR_CW_BEGIN)
         if len(begin) == 0:
             self.error = 'Error: CW_BEGIN not found'
             return
         elif len(begin) > 1:
             self.error = 'Error: CW_BEGIN found multiple times'
             return
-        end = naft_uf.FindAllStrings(self.data, cCiscoMagic.STR_CW_END)
+        end = uf.FindAllStrings(self.data, cCiscoMagic.STR_CW_END)
         if len(end) == 0:
             self.error = 'Error: CW_END not found'
             return
@@ -314,9 +292,9 @@ class cCiscoCWStrings:
             self.error = 'Error: final delimiter $ not found'
             return
         cwStrings = self.data[begin[0]:finalDelimiter + 1]
-        for index in naft_uf.FindAllStrings(cwStrings, cCiscoMagic.STR_CW_):
+        for index in uf.FindAllStrings(cwStrings, cCiscoMagic.STR_CW_):
             startCWString = cwStrings[index:]
-            delimiters = naft_uf.FindAllStrings(startCWString, cCiscoMagic.STR_CW_DELIMITER)
+            delimiters = uf.FindAllStrings(startCWString, cCiscoMagic.STR_CW_DELIMITER)
             if len(delimiters) < 2:
                 self.error = 'Error: delimiters $ not found'
                 return
@@ -497,7 +475,7 @@ class cIOSProcess:
             line += ' ? '
         else:
             line += '%2d ' % self.TTY
-        line += naft_uf.cn(self.name)
+        line += uf.cn(self.name)
         return line
 
 class cIOSCoreDumpAnalysis:

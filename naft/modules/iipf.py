@@ -8,29 +8,12 @@ __author__ = 'Didier Stevens'
 __version__ = '0.0.3'
 __date__ = '2014/05/03'
 
-"""
-
-Source code put in public domain by Didier Stevens, no Copyright
-https://DidierStevens.com
-Use at your own risk
-
-History:
-  2011/12/18: start
-  2011/12/23: continue
-  2011/12/28: extract CW_* strings
-  2012/01/26: NAFT refactoring
-  2013/03/24: updated Pack to handle ELF file with 7 sections; added ImageUncompressedIDAPro
-  2014/05/03: version 0.0.3 assign section names (nameIndexString) when string table section is present
-
-Todo:
-"""
-
 import struct
 from io import BytesIO
 import zipfile
 import hashlib
-import naft_uf
-import naft_impf
+import naft.modules.uf as uf
+import naft.modules.impf as impf
 
 class cELFSection:
 
@@ -169,31 +152,31 @@ class cIOSImage:
         return sum
 
     def ExtractEmbeddedMD5(self, data):
-        index = data.find(naft_impf.cCiscoMagic.STR_FADEFAD1)
+        index = data.find(impf.cCiscoMagic.STR_FADEFAD1)
         if index < 0:
             return None
-        if index + len(naft_impf.cCiscoMagic.STR_FADEFAD1) + 16 > len(data):
+        if index + len(impf.cCiscoMagic.STR_FADEFAD1) + 16 > len(data):
             return None
-        return(''.join(['%02x' % ord(x) for x in data[index + len(naft_impf.cCiscoMagic.STR_FADEFAD1):index + len(naft_impf.cCiscoMagic.STR_FADEFAD1) + 16]]))
+        return(''.join(['%02x' % ord(x) for x in data[index + len(impf.cCiscoMagic.STR_FADEFAD1):index + len(impf.cCiscoMagic.STR_FADEFAD1) + 16]]))
 
     def ExtractSections(self, oELF):
         oSectionHeaderCompressedImage = None
         oSectionHeaderEmbeddedMD5 = None
         oSectionHeaderCWStrings = None
         for oSectionHeader in oELF.sections:
-            if oSectionHeader.sectionData[0:4] == naft_impf.cCiscoMagic.STR_FEEDFACE:
+            if oSectionHeader.sectionData[0:4] == impf.cCiscoMagic.STR_FEEDFACE:
                 if oSectionHeaderCompressedImage != None:
                     print('Error: more than one FEEDFACE section')
                     self.error = 2
                 else:
                     oSectionHeaderCompressedImage = oSectionHeader
-            elif oSectionHeader.sectionData.find(naft_impf.cCiscoMagic.STR_FADEFAD1) >= 0:
+            elif oSectionHeader.sectionData.find(impf.cCiscoMagic.STR_FADEFAD1) >= 0:
                 if oSectionHeaderEmbeddedMD5 != None:
                     print('Error: more than one FADEFAD1 section')
                     self.error = 3
                 else:
                     oSectionHeaderEmbeddedMD5 = oSectionHeader
-            elif oSectionHeader.sectionData.find(naft_impf.cCiscoMagic.STR_CW_BEGIN) >= 0:
+            elif oSectionHeader.sectionData.find(impf.cCiscoMagic.STR_CW_BEGIN) >= 0:
                 if oSectionHeaderCWStrings != None:
                     print('Error: more than one CW_ strings section')
                     self.error = 10
@@ -216,7 +199,7 @@ class cIOSImage:
         if self.oSectionHeaderEmbeddedMD5 != None:
             self.embeddedMD5 = self.ExtractEmbeddedMD5(self.oSectionHeaderEmbeddedMD5.sectionData)
         if self.oSectionHeaderCWStrings != None:
-            self.oCWStrings = naft_impf.cCiscoCWStrings(self.oSectionHeaderCWStrings.sectionData)
+            self.oCWStrings = impf.cCiscoCWStrings(self.oSectionHeaderCWStrings.sectionData)
 
         md5 = hashlib.md5()
         index = 0
@@ -230,8 +213,8 @@ class cIOSImage:
             print('MAGIC number FEEDFACE not found')
             self.error = 4
             return
-        self.sizeUncompressed, self.sizeCompressed, self.checksumCompressed, self.checksumUncompressed = struct.unpack('>IIII', self.oSectionHeaderCompressedImage.sectionData[len(naft_impf.cCiscoMagic.STR_FEEDFACE):len(naft_impf.cCiscoMagic.STR_FEEDFACE) + 4*4])
-        zipData = self.oSectionHeaderCompressedImage.sectionData[len(naft_impf.cCiscoMagic.STR_FEEDFACE) + 4*4:len(naft_impf.cCiscoMagic.STR_FEEDFACE) + 4*4 + self.sizeCompressed]
+        self.sizeUncompressed, self.sizeCompressed, self.checksumCompressed, self.checksumUncompressed = struct.unpack('>IIII', self.oSectionHeaderCompressedImage.sectionData[len(impf.cCiscoMagic.STR_FEEDFACE):len(impf.cCiscoMagic.STR_FEEDFACE) + 4*4])
+        zipData = self.oSectionHeaderCompressedImage.sectionData[len(impf.cCiscoMagic.STR_FEEDFACE) + 4*4:len(impf.cCiscoMagic.STR_FEEDFACE) + 4*4 + self.sizeCompressed]
         self.calculatedChecksumCompressed = cIOSImage.CalcChecksum(zipData)
         try:
             oZipFile = zipfile.ZipFile(BytesIO(zipData))
@@ -273,15 +256,15 @@ class cIOSImage:
         if self.oELF.error == 0:
             print('Entry point:           0x{:08X}'.format(self.oELF.addressEntry))
             print('Number of sections:    {:d}'.format(self.oELF.countSections))
-            print('Embedded MD5:          {}'.format(naft_uf.cn(self.embeddedMD5)))
-#           print('Calculated MD5:        %s' % naft_uf.cn(self.calculatedMD5))
-            print('Compressed size:       %s' % naft_uf.cn(self.sizeCompressed, '%d'))
-            print('Checksum compressed:   %s' % naft_uf.cn(self.checksumCompressed, '0x%08X'))
-            print('Calculated checksum:   %s (%s)' % (naft_uf.cn(self.calculatedChecksumCompressed, '0x%08X'), naft_uf.iif(self.checksumCompressed == self.calculatedChecksumCompressed, 'identical', 'DIFFERENT')))
-            print('Uncompressed size:     %s' % naft_uf.cn(self.sizeUncompressed, '%d'))
-            print('Image name:            %s' % naft_uf.cn(self.imageUncompressedName))
-            print('Checksum uncompressed: %s' % naft_uf.cn(self.checksumUncompressed, '0x%08X'))
-            print('Calculated checksum:   %s (%s)' % (naft_uf.cn(self.calculatedChecksumUncompressed, '0x%08X'), naft_uf.iif(self.checksumUncompressed == self.calculatedChecksumUncompressed, 'identical', 'DIFFERENT')))
+            print('Embedded MD5:          {}'.format(uf.cn(self.embeddedMD5)))
+#           print('Calculated MD5:        %s' % uf.cn(self.calculatedMD5))
+            print('Compressed size:       %s' % uf.cn(self.sizeCompressed, '%d'))
+            print('Checksum compressed:   %s' % uf.cn(self.checksumCompressed, '0x%08X'))
+            print('Calculated checksum:   %s (%s)' % (uf.cn(self.calculatedChecksumCompressed, '0x%08X'), uf.iif(self.checksumCompressed == self.calculatedChecksumCompressed, 'identical', 'DIFFERENT')))
+            print('Uncompressed size:     %s' % uf.cn(self.sizeUncompressed, '%d'))
+            print('Image name:            %s' % uf.cn(self.imageUncompressedName))
+            print('Checksum uncompressed: %s' % uf.cn(self.checksumUncompressed, '0x%08X'))
+            print('Calculated checksum:   %s (%s)' % (uf.cn(self.calculatedChecksumUncompressed, '0x%08X'), uf.iif(self.checksumUncompressed == self.calculatedChecksumUncompressed, 'identical', 'DIFFERENT')))
 
     def Compress(self, filenameUncompressedImage, imageUncompressed):
         oStringIO = BytesIO()
@@ -292,7 +275,7 @@ class cIOSImage:
         oZipFile.close()
         result = oStringIO.getvalue()
         oStringIO.close()
-        result = naft_impf.cCiscoMagic.STR_FEEDFACE + struct.pack('>IIII', len(imageUncompressed), len(result), cIOSImage.CalcChecksum(result), cIOSImage.CalcChecksum(imageUncompressed)) + result
+        result = impf.cCiscoMagic.STR_FEEDFACE + struct.pack('>IIII', len(imageUncompressed), len(result), cIOSImage.CalcChecksum(result), cIOSImage.CalcChecksum(imageUncompressed)) + result
         return result
 
     def Pack(self, filenameUncompressedImage, imageUncompressed):
@@ -333,7 +316,7 @@ class cIOSImage:
             return None
 
     def ImageUncompressedIDAPro(self):
-        newImage = self.imageUncompressed[0:18] + chr(0) + chr(0x14) + self.imageUncompressed[20:] # Set machine to PowerPC 0x14
+        newImage = self.imageUncompressed[0:18] + '\x00\x14'.encode() + self.imageUncompressed[20:] # Set machine to PowerPC 0x14
         return newImage
 
 class cMD5Database():

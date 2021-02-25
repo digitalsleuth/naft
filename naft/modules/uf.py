@@ -5,21 +5,6 @@ __author__ = 'Didier Stevens'
 __version__ = '0.0.9'
 __date__ = '2014/10/05'
 
-"""
-
-Source code put in public domain by Didier Stevens, no Copyright
-https://DidierStevens.com
-Use at your own risk
-
-History:
-  2012/01/25: start
-  2012/02/17: V0.0.4 added LogLine
-  2013/10/12: V0.0.5 added cBufferFile
-  2014/10/05: V0.0.9 File2Data added ZIP support
-
-Todo:
-"""
-
 import time
 import os
 import zipfile

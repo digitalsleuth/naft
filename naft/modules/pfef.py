@@ -5,27 +5,10 @@ __author__ = 'Didier Stevens'
 __version__ = '0.0.7'
 __date__ = '2013/10/12'
 
-"""
-
-Source code put in public domain by Didier Stevens, no Copyright
-https://DidierStevens.com
-Use at your own risk
-
-History:
-  2011/11/30: start, refactoring from CiscoIOMemLL and ExtractIPPackets, sorted frames by address
-  2012/02/16: V0.0.4: memory optimization
-  2012/02/17: refactoring
-  2012/02/20: V0.0.5: refactoring
-  2012/02/23: added OUI.TXT filtering
-  2013/10/12: V0.0.7: cFrames added dFilenameIndexLength logic for buffered reads
-
-Todo:
-"""
-
 import struct
 import hashlib
 import re
-
+import binascii
 
 class cFrames():
     def __init__(self, ouiFilename=None):
@@ -37,7 +20,7 @@ class cFrames():
         self.dFilenameIndexLength = {}
 
     def AddFramePrivate(self, index, data, duplicates, filename=''):
-        filenameIndexLength = '{}-{:d}-{:d}'.format(filename, index, len(data))
+        filenameIndexLength = '%s-%d-%d' % (filename, index, len(data))
         if filenameIndexLength in self.dFilenameIndexLength:
             return False
         self.dFilenameIndexLength[filenameIndexLength] = True
@@ -50,7 +33,7 @@ class cFrames():
         return True
 
     def AddFrame(self, index, data, duplicates, filename=''):
-        if self.dOUI == {} or data[0:3].hex().encode('utf-8') in self.dOUI or data[6:9].hex().encode('utf-8') in self.dOUI:
+        if self.dOUI == {} or binascii.hexlify(data[0:3]) in self.dOUI or binascii.hexlify(data[6:9]) in self.dOUI:
             if self.AddFramePrivate(index, data, duplicates, filename):
                 self.countFrames += 1
 
@@ -111,10 +94,10 @@ class cFrames():
         for frame in sorted(self.frames, key=lambda x: x[0]):
             if frame[0] > index:
                 f.write('ToggleBackColor();\n')
-                f.write('BYTE unknown{:d}[{:d}];\n'.format(countUnknowns, frame[0] - index))
+                f.write('BYTE unknown%d[%d];\n' % (countUnknowns, frame[0] - index))
                 countUnknowns += 1
                 f.write('ToggleBackColor();\n')
-                f.write('BYTE frame%d[{:d}];\n'.format(countFrames, len(frame[1])))
+                f.write('BYTE frame%d[%d];\n' % (countFrames, len(frame[1])))
                 countFrames += 1
                 index = frame[0] + len(frame[1])
 

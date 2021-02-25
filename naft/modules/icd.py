@@ -5,51 +5,18 @@ __author__ = 'Didier Stevens'
 __version__ = '0.0.9'
 __date__ = '2015/02/10'
 
-"""
-
-Source code put in public domain by Didier Stevens, no Copyright
-https://DidierStevens.com
-Use at your own risk
-
-History:
-  2011/12/05: start
-  2011/12/06: continue
-  2011/12/12: continue
-  2012/01/25: refactoring for cIOSCoreDump
-  2012/01/26: IOSCWStrings
-  2012/01/27: Added command processes
-  2012/01/29: Added option minimum
-  2012/01/30: Continue processes
-  2012/01/31: Continue processes
-  2012/02/01: refactoring
-  2012/02/13: V0.0.3: dProcessStructureStats
-  2012/02/15: heuristics
-  2012/02/20: V0.0.5: added IOSHistory
-  2012/02/22: added IOSEvents, refactoring
-  2013/03/30: added IOSCheckText
-  2013/03/31: continued IOSCheckText
-  2014/05/03: V0.0.6: added handling of sreloc in IOSCheckText
-  2014/09/19: V0.0.7: updated IOSFrames
-  2014/10/23: V0.0.9: option -w now also for heap command
-  2014/10/24: added option -D and command integritycheck
-  2015/02/10: added YARA support
-
-Todo:
-"""
-
-import optparse
 import struct
 import re
 import sys
 import os
 import binascii
-import naft_uf
-import naft_impf
-import naft_pfef
-import naft_iipf
+import naft.modules.uf as uf
+import naft.modules.impf as impf
+import naft.modules.pfef as pfef
+import naft.modules.iipf as iipf
 
 def IOSRegions(coredumpFilename, options):
-    oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)
+    oIOSCoreDump = impf.cIOSCoreDump(coredumpFilename)
     if oIOSCoreDump.error != None:
         print(oIOSCoreDump.error)
     else:
@@ -57,8 +24,8 @@ def IOSRegions(coredumpFilename, options):
         for region in oIOSCoreDump.regions:
             if region[2] != None:
                 print('0x{:08X} 0x{:08X} {:<10d} {}'.format(region[1], (region[1] + region[2] - 1), region[2], region[0]))
-                if options.output:
-                    naft_uf.Data2File(oIOSCoreDump.Region(region[0])[1], '{}-{}-0x{:08X}'.format(os.path.basename(coredumpFilename), region[0], region[1]), options.output)
+                if options['output']:
+                    uf.Data2File(oIOSCoreDump.Region(region[0])[1], '{}-{}-0x{:08X}'.format(os.path.basename(coredumpFilename), region[0], region[1]), options['output'])
             else:
                 print('0x{:08X} {} {}'.format(region[1], ' ' * 21, region[0]))
         addressBSS, dataBSS = oIOSCoreDump.RegionBSS()
@@ -86,44 +53,44 @@ def ProcessAt(argument):
         return [argument]
 
 def ProcessHeap(oIOSMemoryBlockHeader, options, coredumpFilename, wpath=None):
-    if not options.strings:
+    if not options['strings']:
         print(oIOSMemoryBlockHeader.ShowLine())
-    if options.strings:
-        dStrings = naft_uf.SearchASCIIStrings(oIOSMemoryBlockHeader.GetData())
-        if options.grep != '':
+    if options['strings']:
+        dStrings = uf.SearchASCIIStrings(oIOSMemoryBlockHeader.GetData())
+        if options['grep'] != '':
             printHeader = True
             for key, value in dStrings.items():
-                if value.find(options.grep.encode('utf-8')) >= 0:
+                if value.find(options['grep'].encode('utf-8')) >= 0:
                     if printHeader:
                         print(oIOSMemoryBlockHeader.ShowLine())
                         printHeader = False
                     print(' {:08X}: {}'.format(
                     oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.BlockSize + key, value.decode('utf-8')))
-        elif options.minimum == 0 or len(dStrings) >= options.minimum:
-            if options.verbose:
+        elif options['minimum'] == 0 or len(dStrings) >= options['minimum']:
+            if options['verbose']:
                 print(oIOSMemoryBlockHeader.ShowLine())
             for key, value in dStrings.items():
                 print(' {:08X}: {}'.format(
                 oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.BlockSize + key, value.decode('utf-8')))
-    if options.dump:
-        naft_uf.DumpBytes(oIOSMemoryBlockHeader.GetData(),
+    if options['dump']:
+        uf.DumpBytes(oIOSMemoryBlockHeader.GetData(),
                           oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.headerSize)
-    if options.dumpraw:
-        naft_uf.DumpBytes(oIOSMemoryBlockHeader.GetRawData(), oIOSMemoryBlockHeader.address)
-    if options.output:
-        naft_uf.Data2File(oIOSMemoryBlockHeader.GetData(), '{}-heap-0x{:08X}.data'.format(coredumpFilename, oIOSMemoryBlockHeader.address), wpath)
-        if options.verbose:
+    if options['dumpraw']:
+        uf.DumpBytes(oIOSMemoryBlockHeader.GetRawData(), oIOSMemoryBlockHeader.address)
+    if options['output']:
+        uf.Data2File(oIOSMemoryBlockHeader.GetData(), '{}-heap-0x{:08X}.data'.format(coredumpFilename, oIOSMemoryBlockHeader.address), wpath)
+        if options['verbose']:
             print('\tFile: {}{}-heap-0x{:08X}.data created.\n'.format(wpath, coredumpFilename, oIOSMemoryBlockHeader.address))
 
 def IOSHeap(coredumpFilename, options):
 
-    if options.output != None:
-        wpath = os.path.join(options.output, "heap_data")
+    if options['output'] != None:
+        wpath = os.path.join(options['output'], "heap_data")
         os.mkdir(wpath)
     else:
         wpath = ''
 
-    oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)
+    oIOSCoreDump = impf.cIOSCoreDump(coredumpFilename)
     if oIOSCoreDump.error != None:
         print(oIOSCoreDump.error)
         return
@@ -131,21 +98,21 @@ def IOSHeap(coredumpFilename, options):
     if memoryHeap == None:
         print('Heap region not found')
         return
-    oIOSMemoryParser = naft_impf.cIOSMemoryParser(memoryHeap)
-    if options.resolve or options.filter != '':
+    oIOSMemoryParser = impf.cIOSMemoryParser(memoryHeap)
+    if options['resolve'] or options['filter'] != '':
         oIOSMemoryParser.ResolveNames(oIOSCoreDump)
-    elif options.filter == '':
-        print(naft_impf.cIOSMemoryBlockHeader.ShowHeader)
+    elif options['filter'] == '':
+        print(impf.cIOSMemoryBlockHeader.ShowHeader)
         for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers:
             ProcessHeap(oIOSMemoryBlockHeader, options, coredumpFilename, wpath)
     else:
-        print(naft_impf.cIOSMemoryBlockHeader.ShowHeader)
+        print(impf.cIOSMemoryBlockHeader.ShowHeader)
         for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers:
-            if oIOSMemoryBlockHeader.AllocNameResolved == options.filter:
+            if oIOSMemoryBlockHeader.AllocNameResolved == options['filter']:
                 ProcessHeap(oIOSMemoryBlockHeader, options, coredumpFilename, wpath)
 
 def IOSCWStringsSub(data):
-    oCWStrings = naft_impf.cCiscoCWStrings(data)
+    oCWStrings = impf.cCiscoCWStrings(data)
     if oCWStrings.error != None:
         print(oCWStrings.error)
         return
@@ -159,14 +126,14 @@ def IOSCWStringsSub(data):
             print('{}:{}{}'.format(key.decode('utf-8'), (' ' * (22 - len(key))), oCWStrings.dCWStrings[key].decode('utf-8')))
 
 def IOSCWStrings(coredumpFilename, options):
-    if options.raw:
-        coredump = naft_uf.File2Data(coredumpFilename)
+    if options['raw']:
+        coredump = uf.File2Data(coredumpFilename)
         if coredump == None:
             print('Error reading file {}'.format(coredumpFilename))
         else:
             IOSCWStringsSub(coredump)
     else:
-        oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)
+        oIOSCoreDump = impf.cIOSCoreDump(coredumpFilename)
         if oIOSCoreDump.error  != None:
             print(oIOSCoreDump.error)
             return
@@ -207,21 +174,21 @@ def PrintStatsAnalysis(dStats, oIOSCoreDump):
         print('{:3d} {:3X}: {:3d} {:08X} {:08X} {:08X} {} {}'.format(key1, key1*4, countKeys, min(dStats[key1]), filteredMin, unfilteredMax, regionName, bucket))
 
 def IOSProcesses(coredumpFilename, options):
-    oIOSCoreDumpAnalysis = naft_impf.cIOSCoreDumpAnalysis(coredumpFilename)
+    oIOSCoreDumpAnalysis = impf.cIOSCoreDumpAnalysis(coredumpFilename)
     if oIOSCoreDumpAnalysis.error != None:
         print(oIOSCoreDumpAnalysis.error)
         return
 
     for (processID, addressProcess, oIOSProcess) in oIOSCoreDumpAnalysis.processes:
-        if options.filter == '' or processID == int(options.filter):
+        if options['filter'] == '' or processID == int(options['filter']):
             if oIOSProcess != None:
                 if oIOSProcess.error == '':
                     line = oIOSProcess.Line()
                 else:
                     line = '{:4d} {}'.format(processID, oIOSProcess.error)
                 print(line)
-                if options.dump:
-                    naft_uf.DumpBytes(oIOSProcess.data, addressProcess)
+                if options['dump']:
+                    uf.DumpBytes(oIOSProcess.data, addressProcess)
             else:
                 print('addressProcess not found {:d} {:08X}'.format(processID, addressProcess))
 
@@ -239,7 +206,7 @@ def IOSProcesses(coredumpFilename, options):
             if value != None:
                 print('{:-22s}: 0x{:04X}'.format(key, value[1]))
 
-    if options.statistics:
+    if options['stats']:
         keys = list(oIOSCoreDumpAnalysis.dProcessStructureStats.keys())
         keys.sort()
         print('Number of different process structures: {:d}'.format(len(keys)))
@@ -248,19 +215,19 @@ def IOSProcesses(coredumpFilename, options):
             PrintStatsAnalysis(oIOSCoreDumpAnalysis.dProcessStructureStats[index], oIOSCoreDumpAnalysis.oIOSCoreDump)
 
 def FilterInitBlocksForString(coredumpFilename, searchTerm):
-    oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)
+    oIOSCoreDump = impf.cIOSCoreDump(coredumpFilename)
     if oIOSCoreDump.error != None:
         return []
     addressHeap, memoryHeap = oIOSCoreDump.RegionHEAP()
     if memoryHeap == None:
         print('Heap region not found')
         return []
-    oIOSMemoryParser = naft_impf.cIOSMemoryParser(memoryHeap)
+    oIOSMemoryParser = impf.cIOSMemoryParser(memoryHeap)
     oIOSMemoryParser.ResolveNames(oIOSCoreDump)
     found = []
     for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers:
         if oIOSMemoryBlockHeader.AllocNameResolved == 'Init':
-            dStrings = naft_uf.SearchASCIIStrings(oIOSMemoryBlockHeader.GetData())
+            dStrings = uf.SearchASCIIStrings(oIOSMemoryBlockHeader.GetData())
             for value in dStrings.values():
                 if value.find(searchTerm) >= 0:
                     found.append(value)
@@ -271,7 +238,7 @@ def IOSHistory(coredumpFilename, options=None):
     for command in FilterInitBlocksForString(coredumpFilename, b'CMD: '):
         oMatch = re.search(b"'(.+)' (.+)", command)
         if oMatch:
-            history.append((naft_uf.parse_dtg(oMatch.group(2).decode('utf-8')), oMatch.group(1).decode('utf-8')))
+            history.append((uf.parse_dtg(oMatch.group(2).decode('utf-8')), oMatch.group(1).decode('utf-8')))
     for command in sorted(history, key=lambda x: x[0]):
         print(f"{command[0].strftime('%b %d %Y %H:%M:%S')} UTC: {command[1]}")
 
@@ -279,14 +246,15 @@ def IOSHistory(coredumpFilename, options=None):
 def IOSEvents(coredumpFilename, options=None):
     events = []
     for raw_event in FilterInitBlocksForString(coredumpFilename, b': %'):
-        dtg = naft_uf.parse_dtg(raw_event.decode('utf-8'))
+        dtg = uf.parse_dtg(raw_event.decode('utf-8'))
         data = raw_event[22:].decode('utf-8')
         events.append((dtg, data))
     for event in sorted(events, key=lambda x: x[0][0]):
         print(f"{event[0][0].strftime('%b %d %Y %H:%M:%S')}.{event[0][1]} UTC: {event[1]}")
 
 def IOSCheckText(coredumpFilename, imageFilename, options):
-    oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)
+    print("Comparing CW_SYSDESCR between core dump and IOS image")
+    oIOSCoreDump = impf.cIOSCoreDump(coredumpFilename)
     if oIOSCoreDump.error  != None:
         print(oIOSCoreDump.error)
         return
@@ -298,16 +266,16 @@ def IOSCheckText(coredumpFilename, imageFilename, options):
         sysdescrCoredump = ''
         dataAddress, dataCoredump = oIOSCoreDump.RegionDATA()
         if dataCoredump != None:
-            oCWStrings = naft_impf.cCiscoCWStrings(dataCoredump)
+            oCWStrings = impf.cCiscoCWStrings(dataCoredump)
             if oCWStrings.error == None and b'CW_SYSDESCR' in oCWStrings.dCWStrings:
                 sysdescrCoredump = oCWStrings.dCWStrings[b'CW_SYSDESCR'].decode('utf-8')
 
-    image = naft_uf.File2Data(imageFilename)
+    image = uf.File2Data(imageFilename)
     if image == None:
         print('Error reading image {}'.format(imageFilename))
         return
 
-    oIOSImage = naft_iipf.cIOSImage(image)
+    oIOSImage = iipf.cIOSImage(image)
     if oIOSImage.error != 0:
         return
     sysdescrImage = ''
@@ -327,7 +295,7 @@ def IOSCheckText(coredumpFilename, imageFilename, options):
             print(sysdescrImage)
         print('')
 
-    oELF = naft_iipf.cELF(oIOSImage.imageUncompressed)
+    oELF = iipf.cELF(oIOSImage.imageUncompressed)
     if oELF.error != 0:
         print('ELF parsing error {:d}.'.format(oELF.error))
         return
@@ -365,7 +333,7 @@ def IOSCheckText(coredumpFilename, imageFilename, options):
 
 # http://phrack.org/issues/60/7.html
 def IOSIntegrityText(coredumpFilename, options):
-    oIOSCoreDump = naft_impf.cIOSCoreDump(coredumpFilename)
+    oIOSCoreDump = impf.cIOSCoreDump(coredumpFilename)
     if oIOSCoreDump.error  != None:
         print(oIOSCoreDump.error)
         return
@@ -373,11 +341,11 @@ def IOSIntegrityText(coredumpFilename, options):
     if memoryHeap == None:
         print('Heap region not found')
         return
-    oIOSMemoryParser = naft_impf.cIOSMemoryParser(memoryHeap)
+    oIOSMemoryParser = impf.cIOSMemoryParser(memoryHeap)
     print('Check start magic:')
     hit = False
     for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers:
-        if oIOSMemoryBlockHeader.GetRawData()[0:4] != naft_impf.cCiscoMagic.STR_BLOCK_BEGIN:
+        if oIOSMemoryBlockHeader.GetRawData()[0:4] != impf.cCiscoMagic.STR_BLOCK_BEGIN:
             print(oIOSMemoryBlockHeader.ShowLine())
             hit = True
     if not hit:
@@ -385,7 +353,7 @@ def IOSIntegrityText(coredumpFilename, options):
     print('Check end magic:')
     hit = False
     for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers:
-        if struct.unpack('>I', oIOSMemoryBlockHeader.GetRawData()[-4:])[0] != naft_impf.cCiscoMagic.INT_BLOCK_CANARY and oIOSMemoryBlockHeader.RefCnt > 0:
+        if struct.unpack('>I', oIOSMemoryBlockHeader.GetRawData()[-4:])[0] != impf.cCiscoMagic.INT_BLOCK_CANARY and oIOSMemoryBlockHeader.RefCnt > 0:
             print(oIOSMemoryBlockHeader.ShowLine())
             hit = True
     if not hit:
@@ -406,52 +374,3 @@ def IOSIntegrityText(coredumpFilename, options):
             hit = True
     if not hit:
         print('OK')
-
-def Main():
-    oParser = optparse.OptionParser(usage='usage: %prog [options] command arguments ...\n' + __description__, version='%prog ' + __version__)
-    oParser.add_option('-d', '--dump', action='store_true', default=False, help='dump data')
-    oParser.add_option('-D', '--dumpraw', action='store_true', default=False, help='dump raw data')
-    oParser.add_option('-s', '--strings', action='store_true', default=False, help='dump strings in data')
-    oParser.add_option('-m', '--minimum', type=int, default=0, help='minimum count number of strings')
-    oParser.add_option('-g', '--grep', default='', metavar='STRING', help='grep strings')
-    oParser.add_option('-r', '--resolve', action='store_true', default=False, help='resolve names')
-    oParser.add_option('-f', '--filter', default='', help='filter for given name')
-    oParser.add_option('-a', '--raw', action='store_true', default=False, help='search in the whole file for CW_ strings')
-    oParser.add_option('-o', '--output', default=None, metavar='PATH', help='output the regions or heap blocks to path')
-    oParser.add_option('-t', '--statistics', action='store_true', default=False, help='Print process structure statistics')
-    oParser.add_option('-v', '--verbose', action='store_true', default=False, help='Increase output verbosity')
-    (options, args) = oParser.parse_args()
-
-    dCommands = {
-                    'regions':        (2, IOSRegions,       'coredump: identify regions in core dump - options o'),
-                    'cwstrings':      (2, IOSCWStrings,     'coredump: extract CW_ strings - options a'),
-                    'heap':           (2, IOSHeap,          'coredump: list heap linked list - options rfdsgmoD'),
-                    'history':        (2, IOSHistory,       'coredump: list command history'),
-                    'events':         (2, IOSEvents,        'coredump: list events'),
-                    'processes':      (2, IOSProcesses,     'coredump: list processes - options fdt'),
-                    'checktext':      (3, IOSCheckText,     'coredump image: compare the text section in memory and image'),
-                    'integritycheck': (2, IOSIntegrityText, 'coredump: check the integrity of the heap'),
-                }
-
-    if len(args) == 0:
-        oParser.print_help()
-        print('')
-        print('Commands:')
-        for command, config in dCommands.items():
-            print('  {} {}'.format(command, config[2]))
-        print('')
-        print('  Source code put in the public domain by Didier Stevens, no Copyright')
-        print('  Use at your own risk')
-        print('  https://DidierStevens.com')
-        return
-    elif not args[0] in dCommands:
-        print('unknown command')
-        return
-
-    if len(args) == dCommands[args[0]][0]:
-        dCommands[args[0]][1](*(args[1:] + [options]))
-    else:
-        print('Error: expected {:d} arguments, you provided {:d} arguments'.format(dCommands[args[0]][0], len(args)))
-
-if __name__ == '__main__':
-    Main()
