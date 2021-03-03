@@ -43,10 +43,10 @@ def CiscoIOSImageFileParser(filename, options):
                 oSectionHeader.size, repr(oSectionHeader.sectionData[0:8])))
 
     if options['extract']:
-        uf.Data2File(oIOSImage.imageUncompressed, oIOSImage.imageUncompressedName, options['output'])
+        uf.Data2File(oIOSImage.imageUncompressed, oIOSImage.imageUncompressedName, options['extract'])
 
     if options['idapro']:
-        uf.Data2File(oIOSImage.ImageUncompressedIDAPro(), oIOSImage.imageUncompressedName, options['output'])
+        uf.Data2File(oIOSImage.ImageUncompressedIDAPro(), oIOSImage.imageUncompressedName, options['idapro'])
 
 def Entropy(data):
     result = 0.0
