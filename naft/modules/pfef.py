@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
 __description__ = 'Network Appliance Forensic Toolkit - Packet and Frame Extraction Functions'
-__author__ = 'Didier Stevens'
-__version__ = '0.0.7'
-__date__ = '2013/10/12'
+__version__ = '1.0.0'
+__original_author__ = 'Didier Stevens'
+__current_authors__ = '@digitalsleuth and @G-K7'
+__date__ = '2021/03/05'
 
 import struct
 import hashlib

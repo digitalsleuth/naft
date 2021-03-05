@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
 __description__ = 'Network Appliance Forensic Toolkit - Generic Frame Extraction'
-__author__ = 'Didier Stevens'
-__version__ = '0.0.7'
-__date__ = '2013/10/12'
+__version__ = '1.0.0'
+__original_author__ = 'Didier Stevens'
+__current_authors__ = '@digitalsleuth and @G-K7'
+__date__ = '2021/03/05'
 
 import glob
 import struct
@@ -12,23 +13,23 @@ import naft.modules.uf as uf
 import naft.modules.pfef as pfef
 import time
 
-def ExtractIPPacketsFromFile(filenamesRawData, filenamePCAP, options):
+def ExtractIPPacketsFromFile(filenamesRawData, filenamePCAP, arguments):
     uf.LogLine('Start')
-    if options['ouitxt'] == None:
+    if arguments['ouitxt'] == None:
         oFrames = pfef.cFrames()
     else:
-        oFrames = pfef.cFrames(options['ouitxt'])
+        oFrames = pfef.cFrames(arguments['ouitxt'])
     countProcessedFiles = 0
     for filenameRawData in filenamesRawData:
-        if options['buffer']:
+        if arguments['buffer']:
             uf.LogLine('Buffering file {}'.format(filenameRawData))
-            oBufferFile = uf.cBufferFile(filenameRawData, options['buffersize'] * 1024 * 1024, options['bufferoverlapsize'] * 1024 * 1024)
+            oBufferFile = uf.cBufferFile(filenameRawData, arguments['buffersize'] * 1024 * 1024, arguments['bufferoverlapsize'] * 1024 * 1024)
             while oBufferFile.Read():
                 uf.LogLine('Processing buffer 0x{:x} size {:d} MB {:d}%'.format(oBufferFile.index, len(oBufferFile.buffer) / 1024 / 1024, oBufferFile.Progress()))
                 uf.LogLine('Searching for IPv4 packets')
-                pfef.ExtractIPPackets(oFrames, oBufferFile.index, oBufferFile.buffer, options['options'], options['duplicates'], True, filenameRawData)
+                pfef.ExtractIPPackets(oFrames, oBufferFile.index, oBufferFile.buffer, arguments['options'], arguments['duplicates'], True, filenameRawData)
                 uf.LogLine('Searching for ARP Ethernet frames')
-                pfef.ExtractARPFrames(oFrames, oBufferFile.index, oBufferFile.buffer, options['duplicates'], True, filenameRawData)
+                pfef.ExtractARPFrames(oFrames, oBufferFile.index, oBufferFile.buffer, arguments['duplicates'], True, filenameRawData)
             if oBufferFile.error == MemoryError:
                 uf.LogLine('Data is too large to fit in memory, use smaller buffer')
             elif oBufferFile.error:
@@ -43,9 +44,9 @@ def ExtractIPPacketsFromFile(filenamesRawData, filenamePCAP, options):
                 uf.LogLine('File is too large to fit in memory')
             else:
                 uf.LogLine('Searching for IPv4 packets')
-                pfef.ExtractIPPackets(oFrames, 0, rawData, options['options'], options['duplicates'], True, filenameRawData)
+                pfef.ExtractIPPackets(oFrames, 0, rawData, arguments['options'], arguments['duplicates'], True, filenameRawData)
                 uf.LogLine('Searching for ARP Ethernet frames')
-                pfef.ExtractARPFrames(oFrames, 0, rawData, options['duplicates'], True, filenameRawData)
+                pfef.ExtractARPFrames(oFrames, 0, rawData, arguments['duplicates'], True, filenameRawData)
                 countProcessedFiles += 1
 
     if countProcessedFiles > 0:
@@ -59,7 +60,7 @@ def ExtractIPPacketsFromFile(filenamesRawData, filenamePCAP, options):
 
     uf.LogLine('Done')
 
-def IOSFrames(coredumpFilename, filenameIOMEM, filenamePCAP, options):
+def IOSFrames(coredumpFilename, filenameIOMEM, filenamePCAP, arguments):
     uf.LogLine('Start')
     uf.LogLine('Reading file {}'.format(coredumpFilename))
     oIOSCoreDump = impf.cIOSCoreDump(coredumpFilename)
@@ -82,7 +83,7 @@ def IOSFrames(coredumpFilename, filenameIOMEM, filenamePCAP, options):
         print('Error parsing IOMEM')
         return
     oFrames = pfef.cFrames()
-    if options['verbose']:
+    if arguments['verbose']:
         print(impf.cIOSMemoryBlockHeader.ShowHeader)
     for oIOSMemoryBlockHeader in oIOSMemoryParserHeap.Headers:
         if oIOSMemoryBlockHeader.AllocNameResolved == '*Packet Header*':
@@ -91,7 +92,7 @@ def IOSFrames(coredumpFilename, filenameIOMEM, filenamePCAP, options):
             if frameSize <= 1:
                 frameSize = struct.unpack('>H', oIOSMemoryBlockHeader.GetData()[68:70])[0]
             if frameAddress != 0 and frameSize != 0:
-                if options['verbose']:
+                if arguments['verbose']:
                     print(oIOSMemoryBlockHeader.ShowLine())
                     uf.DumpBytes(dataIOMEM[frameAddress - addressIOMEM : frameAddress - addressIOMEM + frameSize], frameAddress)
                 oFrames.AddFrame(frameAddress - addressIOMEM, dataIOMEM[frameAddress - addressIOMEM : frameAddress - addressIOMEM + frameSize], True)

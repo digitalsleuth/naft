@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
 __description__ = 'Network Appliance Forensic Toolkit - IOS Image'
-__author__ = 'Didier Stevens'
-__version__ = '0.0.2'
-__date__ = '2013/03/24'
+__version__ = '1.0.0'
+__original_author__ = 'Didier Stevens'
+__current_authors__ = '@digitalsleuth and @G-K7'
+__date__ = '2021/03/05'
 
 import hashlib
 import glob
@@ -15,7 +16,7 @@ import naft.modules.uf as uf
 import naft.modules.iipf as iipf
 import naft.modules.impf as impf
 
-def CiscoIOSImageFileParser(filename, options):
+def CiscoIOSImageFileParser(filename, arguments):
     global oMD5Database
 
     image = uf.File2Data(filename)
@@ -26,9 +27,9 @@ def CiscoIOSImageFileParser(filename, options):
     oIOSImage = iipf.cIOSImage(image)
     oIOSImage.Print()
 
-    if options['md5db']:
-        if options['md5db'] != None:
-            oMD5Database = cMD5Database(options['md5db'])
+    if arguments['md5db']:
+        if arguments['md5db'] != None:
+            oMD5Database = cMD5Database(arguments['md5db'])
         md5hash = hashlib.md5(image).hexdigest()
         filenameCSV, filenameDB = oMD5Database.Find(md5hash)
         if filenameCSV == None:
@@ -36,17 +37,17 @@ def CiscoIOSImageFileParser(filename, options):
         else:
             print('File found in md5 database {} {}'.format(filenameCSV, filenameDB))
 
-    if options['verbose']:
+    if arguments['verbose']:
         for oSectionHeader in oIOSImage.oELF.sections:
-            print(' {:2d} {:->7s} {:d} {:d} {:08X} {:10d} {}'.format(oSectionHeader.nameIndex, \
+            print(' {:2d} {:->7s} {:<2d} {:9d} {:08X} {:10d} {}'.format(oSectionHeader.nameIndex, \
                 oSectionHeader.nameIndexString, oSectionHeader.type, oSectionHeader.flags, oSectionHeader.offset, \
                 oSectionHeader.size, repr(oSectionHeader.sectionData[0:8])))
 
-    if options['extract']:
-        uf.Data2File(oIOSImage.imageUncompressed, oIOSImage.imageUncompressedName, options['extract'])
+    if arguments['extract']:
+        uf.Data2File(oIOSImage.imageUncompressed, oIOSImage.imageUncompressedName, arguments['extract'])
 
-    if options['idapro']:
-        uf.Data2File(oIOSImage.ImageUncompressedIDAPro(), oIOSImage.imageUncompressedName, options['idapro'])
+    if arguments['ida']:
+        uf.Data2File(oIOSImage.ImageUncompressedIDAPro(), oIOSImage.imageUncompressedName, arguments['ida'])
 
 def Entropy(data):
     result = 0.0
@@ -72,8 +73,8 @@ def GlobRecurse(filewildcard):
     filenames.extend(glob.glob(filewildcard))
     return filenames
 
-def GlobFilelist(filewildcard, options):
-    if options['recurse']:
+def GlobFilelist(filewildcard, arguments):
+    if arguments['recurse']:
         return GlobRecurse(filewildcard)
     else:
         return glob.glob(filewildcard)
@@ -90,16 +91,16 @@ def PickleData(data):
     fPickle.close()
     print('Pickle file saved')
 
-def CiscoIOSImageFileScanner(filewildcard, options):
-    if options['resume'] == None:
-        filenames = GlobFilelist(filewildcard, options)
+def CiscoIOSImageFileScanner(filewildcard, arguments):
+    if arguments['resume'] == None:
+        filenames = GlobFilelist(filewildcard, arguments)
         countFilenames = len(filenames)
         counter = 1
-        if options['log'] != None:
-            f = open(options['log'], 'w')
+        if arguments['log'] != None:
+            f = open(arguments['log'], 'w')
             f.close()
     else:
-        fPickle = open(options['resume'], 'rb')
+        fPickle = open(arguments['resume'], 'rb')
         filenames, countFilenames, counter = pickle.load(fPickle)
         fPickle.close()
         print('Pickle file loaded')
@@ -124,14 +125,14 @@ def CiscoIOSImageFileScanner(filewildcard, options):
                     uf.cn(oIOSImage.checksumUncompressed, '0x%08X'), str(oIOSImage.checksumUncompressed != None and \
                     oIOSImage.checksumUncompressed == oIOSImage.calculatedChecksumUncompressed), \
                     uf.cn(oIOSImage.imageUncompressedName), uf.cn(oIOSImage.embeddedMD5)])
-                if options['md5db']:
+                if arguments['md5db']:
                     md5hash = hashlib.md5(image).hexdigest()
                     filenameCSV, filenameDB = oMD5Database.Find(md5hash)
                     line.extend([md5hash, uf.cn(filenameCSV), uf.cn(filenameDB)])
             strLine = ';'.join(line)
             print(strLine)
-            if options['log'] != None:
-                f = open(options['log'], 'a')
+            if arguments['log'] != None:
+                f = open(arguments['log'], 'a')
                 f.write(strLine + '\n')
                 f.close()
             counter += 1
@@ -144,34 +145,3 @@ def CiscoIOSImageFileScanner(filewildcard, options):
             traceback.print_exc()
             PickleData([filenames, countFilenames, counter])
             return
-
-#def Main():
-#    global oMD5Database
-#
-#    oParser = optparse.OptionParser(usage='usage: %prog [options] image\n' + __description__, version='%prog ' + __version__)
-#    oParser.add_option('-v', '--verbose', action='store_true', default=False, help='verbose output')
-#    oParser.add_option('-x', '--extract', action='store_true', default=False, help='extract the compressed image')
-#    oParser.add_option('-i', '--idapro', action='store_true', default=False, help='extract the compressed image and patch it for IDA Pro')
-#    oParser.add_option('-s', '--scan', action='store_true', default=False, help='scan a set of images')
-#    oParser.add_option('-r', '--recurse', action='store_true', default=False, help='recursive scan')
-#    oParser.add_option('-e', '--resume', help='resume an interrupted scan')
-#    oParser.add_option('-m', '--md5db', help='compare md5 hash with provided CSV db')
-#    oParser.add_option('-l', '--log', help='write scan result to log file')
-#    (options, args) = oParser.parse_args()
-
-#    if options['md5db'] != None:
-#        oMD5Database = cMD5Database(options['md5db'])
-#    if len(args) != 1:
-#        oParser.print_help()
-#        print('')
-#        print('  Source code put in the public domain by Didier Stevens, no Copyright')
-#        print('  Use at your own risk')
-#        print('  https://DidierStevens.com')
-#        return
-#    elif options['scan'] :
-#        CiscoIOSImageFileScanner(args[0], options)
-#    elif len(args) == 1:
-#        CiscoIOSImageFileParser(args[0], options)
-
-#if __name__ == '__main__':
-#    Main()

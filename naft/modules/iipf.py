@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
+__description__ = 'Network Appliance Forensic Toolkit - IOS Image Parsing Functions'
+__version__ = '1.0.0'
+__original_author__ = 'Didier Stevens'
+__current_authors__ = '@digitalsleuth and @G-K7'
+__date__ = '2021/03/05'
+
 import os
 import glob
-
-__description__ = 'Network Appliance Forensic Toolkit - IOS Image Parsing Functions'
-__author__ = 'Didier Stevens'
-__version__ = '0.0.3'
-__date__ = '2014/05/03'
-
 import struct
 from io import BytesIO
 import zipfile

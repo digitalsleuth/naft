@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
-__description__ = "Network Appliance Forensic Toolkit"
-__version__ = "v1.0.0"
-__original_author__ = "Didier Stevens"
-__current_authors__ = "@digitalsleuth and @G-K7"
+__description__ = 'Network Appliance Forensic Toolkit'
+__version__ = 'v1.0.0'
+__original_author__ = 'Didier Stevens'
+__current_authors__ = '@digitalsleuth and @G-K7'
+__date__ = '2021/03/05'
 
 import naft.modules.gfe as gfe
 import naft.modules.icd as icd
@@ -19,82 +20,83 @@ import sys
 def missing_req(requirement):
     req_error = {
         'core': 'Please provide a core dump using the --coredump argument.',
-        'binary': 'Please provide an IOS binary using the --binary argument.',
+        'bin': 'Please provide an IOS bin using the --bin argument.',
         'iomem': 'Please provide an IOMEM file using the --iomem argument.',
         'pcap' : 'Please provide a PCAP output filename using the --pcap argument.',
         'list' : 'Please use the --list command to provide at least one file to search.',
         'output' : 'This command requires dumping files to disk, please use the -o/--output argument.',
-        'coremem': 'Please provide core dump and IOMEM files using --coredump & --iomem arguments.'
+        'coremem': 'Please provide core dump and IOMEM files using --coredump & --iomem arguments.',
+        'strings': 'The -g/--grep command requires -s/--strings, please retry your command with -s/--strings.'
     }
     print(req_error[requirement])
     return
 
 def main():
     main_parser = argparse.ArgumentParser(
-        description='Network Appliance Forensics Toolkit',
-        usage='naft.py [subcommand] [options] [core/iomem/binary]',
-        epilog="Use -h on these subcommands to print the available options."
+        description=__description__ + ' ' + str(__version__),
+        usage='naft [category] [function] [optional/required arguments] coredump/bin',
+        epilog="Use -h on each category to view all available options."
     )
 
-    subparsers = main_parser.add_subparsers(title='subcommands', metavar='', prog='naft.py')
+    subparsers = main_parser.add_subparsers(title='categories', metavar='Select one of the three following categories to begin analysis', prog='naft')
 
-    core_parser = subparsers.add_parser('core', help='core dump artifacts')
+    core_parser = subparsers.add_parser('core', help='Core Dump')
     core = core_parser.add_argument_group('functions')
-    group = core.add_mutually_exclusive_group(required=True)
-    group.add_argument('--regions', action='store_true', help='list regions, [-o]')
-    group.add_argument('--cwstrings', action='store_true', help='print CW_ strings, [-a]')
-    group.add_argument('--heap', action='store_true', help='list heaps, [-d] [-D] [-s] [-m] [-g] [-r] [-f] [-o] [-v]')
-    group.add_argument('--history', action='store_true', help='print history')
-    group.add_argument('--events', action='store_true', help='print events')
-    group.add_argument('--processes', action='store_true', help='print processes, [-f] [-d] [-t]')
-    group.add_argument('--check', action='store_true', help='compare text in dump to IOS bin, requires --binary')
-    group.add_argument('--integrity', action='store_true', help='check integrity of core dump')
-    core_parser.add_argument('coredump', help='router core dump file')
-    core_parser.add_argument('-a', '--raw', action='store_true', default=False, help='search in the whole file for CW_ strings')
-    core_parser.add_argument('-d', '--dump', action='store_true', default=False, help='dump data')
-    core_parser.add_argument('-D', '--dumpraw', action='store_true', default=False, help='dump raw data')
-    core_parser.add_argument('-s', '--strings', action='store_true', default=False, help='dump strings in data')
-    core_parser.add_argument('-m', '--minimum', type=int, default=0, help='minimum count number of strings',metavar='COUNT')
-    core_parser.add_argument('-g', '--grep', default='', help='grep strings', metavar='STRING')
-    core_parser.add_argument('-r', '--resolve', action='store_true', default=False, help='resolve names')
-    core_parser.add_argument('-f', '--filter', default='', help='filter for given name', metavar='NAME')
-    core_parser.add_argument('-o', '--output', help='write the regions or heap blocks to path', metavar='PATH')
-    core_parser.add_argument('--binary', help='router binary file', metavar='FILE')
-    core_parser.add_argument('-v', '--verbose', action='store_true', default=False, help='increase output verbosity')
-    core_parser.add_argument('-t', '--stats', action='store_true', default=False, help='print process structure statistics')
+    core_group = core.add_mutually_exclusive_group(required=True)
+    core_group.add_argument('--regions', action='store_true', help='List regions: [-o]')
+    core_group.add_argument('--cwstrings', action='store_true', help='Print CW_ strings: [-a]')
+    core_group.add_argument('--heap', action='store_true', help='List heaps: [-d] [-D] [-s] [-m] [-g] [-r] [-f] [-o] [-v]')
+    core_group.add_argument('--history', action='store_true', help='Print history')
+    core_group.add_argument('--events', action='store_true', help='Print events')
+    core_group.add_argument('--processes', action='store_true', help='Print processes: [-f] [-d] [-S]')
+    core_group.add_argument('--check', action='store_true', help='Compare text in dump to IOS bin, requires --bin')
+    core_group.add_argument('--integrity', action='store_true', help='Check integrity of core dump')
+    core_parser.add_argument('coredump', help='Core dump file')
+    core_parser.add_argument('-a', '--raw', action='store_true', default=False, help='Search the whole core dump for CW_ strings')
+    core_parser.add_argument('-d', '--dump', action='store_true', default=False, help='Dump data')
+    core_parser.add_argument('-D', '--dumpraw', action='store_true', default=False, help='Dump raw data')
+    core_parser.add_argument('-s', '--strings', action='store_true', default=False, help='Dump strings in data')
+    core_parser.add_argument('-m', '--minimum', type=int, default=0, help='Minimum count number of strings', metavar='COUNT')
+    core_parser.add_argument('-g', '--grep', default='', help='Grep for strings', metavar='STRING')
+    core_parser.add_argument('-r', '--resolve', action='store_true', default=False, help='Resolve names for processes')
+    core_parser.add_argument('-f', '--filter', default='', help='Filter for a given name', metavar='NAME')
+    core_parser.add_argument('-o', '--output', help='Output the regions or heap blocks to path', metavar='PATH')
+    core_parser.add_argument('--bin', help='IOS bin file', metavar='FILE')
+    core_parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Increase output verbosity')
+    core_parser.add_argument('-S', '--stats', action='store_true', default=False, help='Print process structure statistics')
 
 
-    network_parser = subparsers.add_parser('network', help='generic frame extraction')
+    network_parser = subparsers.add_parser('network', help='Generic Frame and Packet Extraction')
     network = network_parser.add_argument_group('functions')
     network_group = network.add_mutually_exclusive_group(required=True)
-    network_group.add_argument('--frames', help='extract frames and store them in a .pcap file, requires --coredump & --iomem', metavar='PCAP')
-    network_group.add_argument('--packets', help='extract packets and store them in a .pcap file, requires --list', metavar='PCAP')
-    frames = network_parser.add_argument_group('frames options')
-    frames.add_argument('--coredump', help='router core dump file', metavar='FILE')
-    frames.add_argument('--iomem', help='router iomem dump file', metavar='FILE')
-    frames.add_argument('-v', '--verbose', action='store_true', default=False, help='increase output verbosity')
-    packets = network_parser.add_argument_group('packets options')
-    packets.add_argument('--list', nargs='+', metavar='FILE', help='list of files to extract packets from, use --list <file1> <file2>')
-    packets.add_argument('-d', '--duplicates', action='store_true', default=False, help='include duplicates')
-    packets.add_argument('-p', '--options', action='store_true', default=False, help='search for IPv4 headers with options')
-    packets.add_argument('-t', '--ouitxt', help='ouitxt filename to filter MAC addresses with unknown ID')
-    packets.add_argument('-b', '--buffer', action='store_true', default=False, help='buffer file in 100MB blocks with 1MB overlap')
-    packets.add_argument('-B', '--buffersize', type=int, default=100, help='size of buffer in MB (default 100MB)')
-    packets.add_argument('-O', '--bufferoverlapsize', type=int, default=1, help='size of buffer overlap in MB (default 1MB)')
+    network_group.add_argument('--frames', help='Extract frames and store them in a .pcap file, requires --coredump & --iomem', metavar='PCAP')
+    network_group.add_argument('--packets', help='Extract packets and store them in a .pcap file, requires --list', metavar='PCAP')
+    frames = network_parser.add_argument_group('Frames options')
+    frames.add_argument('--coredump', help='Core dump file', metavar='FILE')
+    frames.add_argument('--iomem', help='iomem dump file', metavar='FILE')
+    frames.add_argument('-v', '--verbose', action='store_true', default=False, help='Increase output verbosity')
+    packets = network_parser.add_argument_group('Packets options')
+    packets.add_argument('--list', nargs='+', metavar='FILE', help='List of files to extract packets from, use --list <file1> <file2>')
+    packets.add_argument('-d', '--duplicates', action='store_true', default=False, help='Include duplicates')
+    packets.add_argument('-p', '--options', action='store_true', default=False, help='Search for IPv4 headers with options')
+    packets.add_argument('-t', '--ouitxt', help='File containing OUI\'s to filter for MAC addresses with unknown ID')
+    packets.add_argument('-b', '--buffer', action='store_true', default=False, help='Buffer the file in 100MB blocks with 1MB overlap')
+    packets.add_argument('-B', '--buffersize', type=int, default=100, help='Explicitly set size of buffer in MB (default 100MB)')
+    packets.add_argument('-O', '--bufferoverlapsize', type=int, default=1, help='Explicitly set size of buffer overlap in MB (default 1MB)')
 
 
-    image_parser = subparsers.add_parser('image', help='IOS image analysis')
+    image_parser = subparsers.add_parser('image', help='IOS Image Analysis')
     image = image_parser.add_argument_group('functions')
     image_group = image.add_mutually_exclusive_group(required=True)
-    image_group.add_argument('--extract', help='extract the compressed image to path, requires --binary [-m] [-v]', metavar='PATH')
-    image_group.add_argument('--idapro', help='extract the compressed image to path and patch it for IDA Pro, requires --binary [-m] [-v]', metavar='PATH')
-    image_group.add_argument('--scan', action='store_true', default=False, help='scan a set of images, binary requires a wildcard [-R] [-r] [-m] [-l]')
-    image_parser.add_argument('-m', '--md5db', help='compare md5 hash with provided CSV db', metavar='CSV')
-    image_parser.add_argument('binary', help='router binary file, use wildcard for --scan')
-    image_parser.add_argument('-R', '--recurse', action='store_true', default=False, help='recursive scan')
-    image_parser.add_argument('-r', '--resume', action='store_true', default=False, help='resume an interrupted scan')
-    image_parser.add_argument('-l', '--log', help='write scan result to log file', metavar='FILE')
-    image_parser.add_argument('-v', '--verbose', action='store_true', default=False, help='increase output verbosity')
+    image_group.add_argument('--extract', help='Extract the compressed image to path: [-m] [-v]', metavar='PATH')
+    image_group.add_argument('--ida', help='Extract the compressed image to path and patch it for IDA Pro: [-m] [-v]', metavar='PATH')
+    image_group.add_argument('--scan', action='store_true', default=False, help='Scan a set of images, bin requires a wildcard: [-R] [-r] [-m] [-l]')
+    image_parser.add_argument('-m', '--md5db', help='Compare MD5 hash with provided CSV formatted db', metavar='CSV')
+    image_parser.add_argument('bin', help='IOS bin file, use wildcard for --scan')
+    image_parser.add_argument('-R', '--recurse', action='store_true', default=False, help='Recursive scan')
+    image_parser.add_argument('-r', '--resume', action='store_true', default=False, help='Resume an interrupted scan')
+    image_parser.add_argument('-l', '--log', help='Write scan result to log file', metavar='FILE')
+    image_parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Increase output verbosity')
 
 
     args = main_parser.parse_args()
@@ -109,7 +111,10 @@ def main():
         elif args.cwstrings:
             icd.IOSCWStrings(args.coredump, all_args)
         elif args.heap:
-            icd.IOSHeap(args.coredump, all_args)
+            if args.grep and not args.strings:
+                missing_req('strings')
+            else:
+                icd.IOSHeap(args.coredump, all_args)
         elif args.history:
             icd.IOSHistory(args.coredump)
         elif args.events:
@@ -117,10 +122,10 @@ def main():
         elif args.processes:
             icd.IOSProcesses(args.coredump, all_args)
         elif args.check:
-            if not args.binary:
-                missing_req('binary')
+            if not args.bin:
+                missing_req('bin')
             else:
-                icd.IOSCheckText(args.coredump, args.binary, all_args)
+                icd.IOSCheckText(args.coredump, args.bin, all_args)
         elif args.integrity:
             icd.IOSIntegrityText(args.coredump, all_args)
 
@@ -137,10 +142,10 @@ def main():
                 gfe.ExtractIPPacketsFromFile(args.list, args.packets, all_args)
 
     if sys.argv[1] == 'image':
-        if args.extract is not None or args.idapro is not None:
-            ii.CiscoIOSImageFileParser(args.binary, all_args)
+        if args.extract is not None or args.ida is not None:
+            ii.CiscoIOSImageFileParser(args.bin, all_args)
         elif args.scan:
-            ii.CiscoIOSImageFileScanner(args.binary, all_args)
+            ii.CiscoIOSImageFileScanner(args.bin, all_args)
 
 if __name__ == '__main__':
     main()

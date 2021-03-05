@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
 __description__ = 'Network Appliance Forensic Toolkit - IOS Memory Parsing Functions'
-__author__ = 'Didier Stevens'
-__version__ = '0.0.9'
-__date__ = '2014/10/24'
+__version__ = '1.0.0'
+__original_author__ = 'Didier Stevens'
+__current_authors__ = '@digitalsleuth and @G-K7'
+__date__ = '2021/03/05'
 
 import struct
 import re
@@ -186,7 +187,7 @@ class cIOSMemoryBlockHeader:
             PrevFree = '{:->8s}'.format('{:X}'.format(self.PrevFree))
         return '{:08X} {:010d} {:08X} {:08X} {:03d} {} {} {:08X} {}'.format(self.address, self.BlockSize, self.PrevBlock, self.NextBlock, self.RefCnt, PrevFree, NextFree, self.AllocPC, allocName)
 
-    ShowHeader = 'Address\t Bytes\t    PrevBlk  NextBlk  Ref PrevFree NextFree Alloc PC What'
+    ShowHeader = 'Address\t Bytes\t    PrevBlk  NextBlk  Ref PrevFree NextFree Alloc    PC       What'
 
 class cIOSMemoryParser:
 
