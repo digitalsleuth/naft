@@ -55,7 +55,7 @@ def Entropy(data):
     if size != 0:
         bucket = [0]*256
         for char in data:
-            bucket[ord(char)] += 1
+            bucket[char] += 1
         for count in bucket:
             if count > 0:
                 percentage = float(count) / size
@@ -92,7 +92,7 @@ def PickleData(data):
     print('Pickle file saved')
 
 def CiscoIOSImageFileScanner(filewildcard, arguments):
-    if arguments['resume'] == None:
+    if not arguments['resume']:
         filenames = GlobFilelist(filewildcard, arguments)
         countFilenames = len(filenames)
         counter = 1
