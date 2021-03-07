@@ -304,6 +304,18 @@ class cCiscoCWStrings:
 class cIOSProcess:
 
     dFields = {
+                692: {
+                        'addressProcessName': ('>I', 0xD0),
+                        'PC':                 ('>I', 0x6C),
+                        'Q':                  ('>I', 0xD4),
+                        'Ty':                 ('>I', 0x64),
+                        'Runtime':            ('>I', 0xB8),
+                        'Invoked':            ('>I', 0xC8),
+                        'Stack1':             ('>I', 0xEC),
+                        'Stack2':             ('>I', 0xF0),
+                        'addressStackBlock':  ('>I', 0x00),
+                        'addressTTY':         ('>I', 0xF8),
+                     },
                 696: {
                         'addressProcessName': ('>I', 0xE8),
                         'PC':                 ('>I', 0x90),
@@ -420,7 +432,7 @@ class cIOSProcess:
     @classmethod
     def Q2Str(cls, number):
         dPriorities = {2:'C', 3:'H', 4:'M', 5:'L'}
-        dPriorities = {1:'C', 2:'H', 3:'M', 4:'L'} #a# regression test this
+        #dPriorities = {1:'C', 2:'H', 3:'M', 4:'L'} #a# regression test this
         if number in dPriorities:
             return dPriorities[number]
         else:
@@ -429,7 +441,7 @@ class cIOSProcess:
     @classmethod
     def Ty2Str(cls, number):
         dTys = {0:'*', 4:'we', 6:'si', 7:'sp', 8:'st'}
-        dTys = {0:'*', 1:'E', 2:'S', 3:'rd', 4:'we', 5:'sa', 6:'si', 7:'sp', 8:'st', 9:'hg', 10:'xx'} # untested
+        #dTys = {0:'*', 1:'E', 2:'S', 3:'rd', 4:'we', 5:'sa', 6:'si', 7:'sp', 8:'st', 9:'hg', 10:'xx'} # untested
         if number in dTys:
             return dTys[number]
         else:
