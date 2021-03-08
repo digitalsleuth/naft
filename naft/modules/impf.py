@@ -173,7 +173,7 @@ class cIOSMemoryBlockHeader:
         return self.oIOSMemoryParser.memory[self.index:self.index + self.headerSize + self.BlockSize]
 
     def ShowLine(self):
-        if self.AllocNameResolved == '':
+        if self.AllocNameResolved == '' or self.AllocNameResolved == None:
             allocName = '{:08X}'.format(self.AllocName)
         else:
             allocName = self.AllocNameResolved
@@ -187,7 +187,7 @@ class cIOSMemoryBlockHeader:
             PrevFree = '{:->8s}'.format('{:X}'.format(self.PrevFree))
         return '{:08X} {:010d} {:08X} {:08X} {:03d} {} {} {:08X} {}'.format(self.address, self.BlockSize, self.PrevBlock, self.NextBlock, self.RefCnt, PrevFree, NextFree, self.AllocPC, allocName)
 
-    ShowHeader = 'Address\t Bytes\t    PrevBlk  NextBlk  Ref PrevFree NextFree Alloc    PC       What'
+    ShowHeader = 'Address\t Bytes\t    PrevBlk  NextBlk  Ref PrevFree NextFree AllocPC  What'
 
 class cIOSMemoryParser:
 
