@@ -68,8 +68,8 @@ def ProcessHeap(oIOSMemoryBlockHeader, arguments, coredumpFilename, wpath=None):
                     print(' {:08X}: {}'.format(
                     oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.BlockSize + key, value.decode('utf-8')))
         elif arguments['minimum'] == 0 or len(dStrings) >= arguments['minimum']:
-            if arguments['verbose']:
-                print(oIOSMemoryBlockHeader.ShowLine())
+            #if arguments['verbose']:
+            print(oIOSMemoryBlockHeader.ShowLine())
             for key, value in dStrings.items():
                 print(' {:08X}: {}'.format(
                 oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.BlockSize + key, value.decode('utf-8')))
@@ -102,7 +102,7 @@ def IOSHeap(coredumpFilename, arguments):
     oIOSMemoryParser = impf.cIOSMemoryParser(memoryHeap)
     if arguments['resolve'] or arguments['filter'] != '':
         oIOSMemoryParser.ResolveNames(oIOSCoreDump)
-    elif arguments['filter'] == '':
+    if arguments['filter'] == '':
         print(impf.cIOSMemoryBlockHeader.ShowHeader)
         for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers:
             ProcessHeap(oIOSMemoryBlockHeader, arguments, coredumpFilename, wpath)
