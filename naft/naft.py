@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 __description__ = 'Network Appliance Forensic Toolkit'
-__version__ = 'v1.0.0'
+__version__ = 'v1.0.1'
 __original_author__ = 'Didier Stevens'
 __current_authors__ = '@digitalsleuth and @G-K7'
-__date__ = '2021/03/05'
+__date__ = '2021/03/09'
 
 import naft.modules.gfe as gfe
 import naft.modules.icd as icd
@@ -20,7 +20,7 @@ import sys
 def missing_req(requirement):
     req_error = {
         'core': 'Please provide a core dump using the --coredump argument.',
-        'bin': 'Please provide an IOS bin using the --bin argument.',
+        'bin': 'Please provide an IOS bin file.',
         'iomem': 'Please provide an IOMEM file using the --iomem argument.',
         'pcap' : 'Please provide a PCAP output filename using the --pcap argument.',
         'list' : 'Please use the --list command to provide at least one file to search.',
@@ -91,6 +91,7 @@ def main():
     image_group.add_argument('--extract', help='Extract the compressed image to path: [-m] [-v]', metavar='PATH')
     image_group.add_argument('--ida', help='Extract the compressed image to path and patch it for IDA Pro: [-m] [-v]', metavar='PATH')
     image_group.add_argument('--scan', action='store_true', default=False, help='Scan a set of images, bin requires a wildcard: [-R] [-r] [-m] [-l]')
+    image_group.add_argument('--info', action='store_true', default=False, help='Scan defined image and output metadata')
     image_parser.add_argument('-m', '--md5db', help='Compare MD5 hash with provided CSV formatted db', metavar='CSV')
     image_parser.add_argument('bin', help='IOS bin file, use wildcard for --scan')
     image_parser.add_argument('-R', '--recurse', action='store_true', default=False, help='Recursive scan')
@@ -142,7 +143,7 @@ def main():
                 gfe.ExtractIPPacketsFromFile(args.list, args.packets, all_args)
 
     if sys.argv[1] == 'image':
-        if args.extract is not None or args.ida is not None:
+        if args.extract or args.ida or args.info:
             ii.CiscoIOSImageFileParser(args.bin, all_args)
         elif args.scan:
             ii.CiscoIOSImageFileScanner(args.bin, all_args)
