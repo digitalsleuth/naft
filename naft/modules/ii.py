@@ -115,7 +115,7 @@ def CiscoIOSImageFileScanner(filewildcard, arguments):
             else:
                 oIOSImage = iipf.cIOSImage(image)
                 if oIOSImage.oCWStrings != None and oIOSImage.oCWStrings.error == None:
-                    line.extend([uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, b'CW_VERSION')), uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, b'CW_FAMILY'))])
+                    line.extend([(uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, b'CW_VERSION'))).decode(), (uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, b'CW_FAMILY'))).decode()])
                 else:
                     line.extend([uf.cn(None), uf.cn(None)])
                 line.extend([str(len(image)), '{:.2f}'.format(Entropy(image)), str(oIOSImage.error), \
