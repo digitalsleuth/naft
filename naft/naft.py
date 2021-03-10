@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 __description__ = 'Network Appliance Forensic Toolkit'
-__version__ = 'v1.0.1'
+__version__ = 'v1.0.0b1'
 __original_author__ = 'Didier Stevens'
 __current_authors__ = '@digitalsleuth and @G-K7'
 __date__ = '2021/03/09'
