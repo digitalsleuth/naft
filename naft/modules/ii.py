@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 __description__ = 'Network Appliance Forensic Toolkit - IOS Image'
-__version__ = '1.0.0'
+__version__ = '1.0.0b1'
 __original_author__ = 'Didier Stevens'
 __current_authors__ = '@digitalsleuth and @G-K7'
 __date__ = '2021/03/05'
@@ -114,8 +114,8 @@ def CiscoIOSImageFileScanner(filewildcard, arguments):
                 line.extend(['Error reading'])
             else:
                 oIOSImage = iipf.cIOSImage(image)
-                if oIOSImage.oCWStrings != None and oIOSImage.oCWStrings.error == '':
-                    line.extend([uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, 'CW_VERSION')), uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, 'CW_FAMILY'))])
+                if oIOSImage.oCWStrings != None and oIOSImage.oCWStrings.error == None:
+                    line.extend([uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, b'CW_VERSION')), uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, b'CW_FAMILY'))])
                 else:
                     line.extend([uf.cn(None), uf.cn(None)])
                 line.extend([str(len(image)), '{:.2f}'.format(Entropy(image)), str(oIOSImage.error), \
@@ -129,7 +129,7 @@ def CiscoIOSImageFileScanner(filewildcard, arguments):
                     md5hash = hashlib.md5(image).hexdigest()
                     filenameCSV, filenameDB = oMD5Database.Find(md5hash)
                     line.extend([md5hash, uf.cn(filenameCSV), uf.cn(filenameDB)])
-            strLine = ';'.join(line)
+            strLine = ','.join(line)
             print(strLine)
             if arguments['log'] != None:
                 f = open(arguments['log'], 'a')
