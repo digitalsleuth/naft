@@ -12,9 +12,26 @@ import os
 import math
 import pickle
 import traceback
+from concurrent.futures import ProcessPoolExecutor
 import naft.modules.uf as uf
 import naft.modules.iipf as iipf
+import time
+import re
 import naft.modules.impf as impf
+
+
+def inProgress(function, obj):
+    animation = "|/-\\"
+    idx = 0
+    pool = ProcessPoolExecutor(3)
+    future = pool.submit(function, (obj))
+
+    while not future.done():
+        print("Processing... "+animation[idx % len(animation)], end="\r")
+        idx += 1
+        time.sleep(0.1)
+
+    return future.result()
 
 def CiscoIOSImageFileParser(filename, arguments):
     global oMD5Database
@@ -24,7 +41,7 @@ def CiscoIOSImageFileParser(filename, arguments):
         print('Error reading {}'.format(filename))
         return
 
-    oIOSImage = iipf.cIOSImage(image)
+    oIOSImage = inProgress(iipf.cIOSImage, image)
     oIOSImage.Print()
 
     if arguments['md5db']:
@@ -38,15 +55,27 @@ def CiscoIOSImageFileParser(filename, arguments):
             print('File found in md5 database {} {}'.format(filenameCSV, filenameDB))
 
     if arguments['verbose']:
+        print('\nELF Headers:\n')
+        print(f"index {'index_str': >10} {'type': >10} {'flags': >10} {'offset': >10} {'size': >10} {'data': >10}")
         for oSectionHeader in oIOSImage.oELF.sections:
-            print(' {:2d} {:->7s} {:<2d} {:9d} {:08X} {:10d} {}'.format(oSectionHeader.nameIndex, \
-                oSectionHeader.nameIndexString, oSectionHeader.type, oSectionHeader.flags, oSectionHeader.offset, \
-                oSectionHeader.size, repr(oSectionHeader.sectionData[0:8])))
+            print('   {:2d}    {:->7s} {:>10d} {:10d}   {:08X} {:>10d}       {}'.format(
+                oSectionHeader.nameIndex,
+                oSectionHeader.nameIndexString,
+                oSectionHeader.type,
+                oSectionHeader.flags,
+                oSectionHeader.offset,
+                oSectionHeader.size,
+                repr(oSectionHeader.sectionData[0:8]))
+            )
 
     if arguments['extract']:
+        print("\n{} written to: {}".format(oIOSImage.imageUncompressedName, arguments['extract']))
         uf.Data2File(oIOSImage.imageUncompressed, oIOSImage.imageUncompressedName, arguments['extract'])
 
     if arguments['ida']:
+        print("\nPatching for IDA Pro...")
+        time.sleep(0.5)
+        print("{} written to: {}".format(oIOSImage.imageUncompressedName, arguments['ida']))
         uf.Data2File(oIOSImage.ImageUncompressedIDAPro(), oIOSImage.imageUncompressedName, arguments['ida'])
 
 def Entropy(data):
@@ -94,7 +123,9 @@ def PickleData(data):
 def CiscoIOSImageFileScanner(filewildcard, arguments):
     if not arguments['resume']:
         filenames = GlobFilelist(filewildcard, arguments)
+        print('Target directory: /{}'.format('/'.join(re.split(r'[/\\]+', filenames[0])[:-1])))
         countFilenames = len(filenames)
+        print(f"Performing scan on {countFilenames} file(s).\n")
         counter = 1
         if arguments['log'] != None:
             f = open(arguments['log'], 'w')
@@ -108,23 +139,32 @@ def CiscoIOSImageFileScanner(filewildcard, arguments):
     while len(filenames) > 0:
         filename = filenames[0]
         try:
-            line = [str(counter), str(countFilenames), filename]
+            line = [str(counter), str(countFilenames), re.split(r'[/\\]+',filename)[-1]]
             image = uf.File2Data(filename)
             if image == None:
                 line.extend(['Error reading'])
             else:
-                oIOSImage = iipf.cIOSImage(image)
+                oIOSImage = inProgress(iipf.cIOSImage, image)
                 if oIOSImage.oCWStrings != None and oIOSImage.oCWStrings.error == '':
                     line.extend([uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, 'CW_VERSION')), uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, 'CW_FAMILY'))])
                 else:
                     line.extend([uf.cn(None), uf.cn(None)])
-                line.extend([str(len(image)), '{:.2f}'.format(Entropy(image)), str(oIOSImage.error), \
-                    str(oIOSImage.oELF.error), str(oIOSImage.oELF.countSections), str(uf.cn(oIOSImage.oELF.stringTableIndex)), \
-                    uf.cn(oIOSImage.checksumCompressed, '0x%08X'), str(oIOSImage.checksumCompressed != None and \
-                    oIOSImage.checksumCompressed == oIOSImage.calculatedChecksumCompressed), \
-                    uf.cn(oIOSImage.checksumUncompressed, '0x%08X'), str(oIOSImage.checksumUncompressed != None and \
-                    oIOSImage.checksumUncompressed == oIOSImage.calculatedChecksumUncompressed), \
-                    uf.cn(oIOSImage.imageUncompressedName), uf.cn(oIOSImage.embeddedMD5)])
+                line.extend([
+                    str(len(image)),
+                    '{:.2f}'.format(Entropy(image)),
+                    str(oIOSImage.error),
+                    str(oIOSImage.oELF.error),
+                    str(oIOSImage.oELF.countSections),
+                    str(uf.cn(oIOSImage.oELF.stringTableIndex)),
+                    uf.cn(oIOSImage.checksumCompressed, '0x%08X'),
+                    str(oIOSImage.checksumCompressed != None and \
+                    oIOSImage.checksumCompressed == oIOSImage.calculatedChecksumCompressed),
+                    uf.cn(oIOSImage.checksumUncompressed, '0x%08X'),
+                    str(oIOSImage.checksumUncompressed != None and \
+                    oIOSImage.checksumUncompressed == oIOSImage.calculatedChecksumUncompressed),
+                    uf.cn(oIOSImage.imageUncompressedName),
+                    uf.cn(oIOSImage.embeddedMD5)
+                ])
                 if arguments['md5db']:
                     md5hash = hashlib.md5(image).hexdigest()
                     filenameCSV, filenameDB = oMD5Database.Find(md5hash)
@@ -145,3 +185,5 @@ def CiscoIOSImageFileScanner(filewildcard, arguments):
             traceback.print_exc()
             PickleData([filenames, countFilenames, counter])
             return
+    print("")
+    print(f"{counter-1} file(s) scanned.")
