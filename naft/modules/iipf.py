@@ -248,6 +248,7 @@ class cIOSImage:
                     self.calculatedChecksumUncompressed = cIOSImage.CalcChecksum(self.imageUncompressed)
 
     def Print(self):
+        print('IOS Image Metadata:\n')
         if self.oCWStrings != None and self.oCWStrings.error == '':
             for key in ['CW_VERSION', 'CW_FAMILY', 'CW_FEATURE', 'CW_IMAGE', 'CW_SYSDESCR']:
                 if key in self.oCWStrings.dCWStrings:
