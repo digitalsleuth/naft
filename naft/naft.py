@@ -20,7 +20,7 @@ import sys
 def missing_req(requirement):
     req_error = {
         'core': 'Please provide a core dump using the --coredump argument.',
-        'bin': 'Please provide an IOS bin file.',
+        'bin': 'Please provide an IOS bin file using the --bin argument.',
         'iomem': 'Please provide an IOMEM file using the --iomem argument.',
         'pcap' : 'Please provide a PCAP output filename using the --pcap argument.',
         'list' : 'Please use the --list command to provide at least one file to search.',
@@ -34,7 +34,7 @@ def missing_req(requirement):
 def main():
     main_parser = argparse.ArgumentParser(
         description=__description__ + ' ' + str(__version__),
-        usage='naft [category] [function] [optional/required arguments] coredump/bin',
+        usage='naft [category] [function] [optional/required arguments]',
         epilog="Use -h on each category to view all available options."
     )
 
@@ -88,14 +88,13 @@ def main():
     image_parser = subparsers.add_parser('image', help='IOS Image Analysis')
     image = image_parser.add_argument_group('functions')
     image_group = image.add_mutually_exclusive_group(required=True)
-    image_group.add_argument('--extract', help='Extract the compressed image to path: [-m] [-v]', metavar='PATH')
-    image_group.add_argument('--ida', help='Extract the compressed image to path and patch it for IDA Pro: [-m] [-v]', metavar='PATH')
-    image_group.add_argument('--scan', action='store_true', default=False, help='Scan a set of images, bin requires a wildcard: [-R] [-r] [-m] [-l]')
-    image_group.add_argument('--info', action='store_true', default=False, help='Scan defined image and output metadata')
+    image_group.add_argument('--bin', help='Scan image and output metadata: [-v] [-x] [-i] [-m]', metavar='FILE')
+    image_group.add_argument('--scan', metavar='DIR', help='Find and scan all images within DIR: [-R] [-r] [-m] [-l]')
+    image_parser.add_argument('-x', '--extract', help='Extract the compressed image to PATH', metavar='PATH')
+    image_parser.add_argument('-i', '--ida', help='Extract the compressed image to PATH and patch it for IDA Pro', metavar='PATH')
     image_parser.add_argument('-m', '--md5db', help='Compare MD5 hash with provided CSV formatted db', metavar='CSV')
-    image_parser.add_argument('bin', help='IOS bin file, use wildcard for --scan')
-    image_parser.add_argument('-R', '--recurse', action='store_true', default=False, help='Recursive scan')
-    image_parser.add_argument('-r', '--resume', action='store_true', default=False, help='Resume an interrupted scan')
+    image_parser.add_argument('-R', '--recurse', action='store_true', default=False, help='Recursively search sub-directories for images')
+    image_parser.add_argument('-r', '--resume', help='Resume an interrupted scan from Pickle file', metavar='PKL')
     image_parser.add_argument('-l', '--log', help='Write scan result to log file', metavar='FILE')
     image_parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Increase output verbosity')
 
@@ -131,22 +130,22 @@ def main():
             icd.IOSIntegrityText(args.coredump, all_args)
 
     if sys.argv[1] == 'network':
-        if args.frames is not None:
+        if args.frames:
             if not args.coredump or not args.iomem:
                 missing_req('coremem')
             else:
                 gfe.IOSFrames(args.coredump, args.iomem, args.frames, all_args)
-        elif args.packets is not None:
+        elif args.packets:
             if not args.list:
                 missing_req('list')
             else:
                 gfe.ExtractIPPacketsFromFile(args.list, args.packets, all_args)
 
     if sys.argv[1] == 'image':
-        if args.extract or args.ida or args.info:
+        if args.bin:
             ii.CiscoIOSImageFileParser(args.bin, all_args)
-        elif args.scan:
-            ii.CiscoIOSImageFileScanner(args.bin, all_args)
+        if args.scan:
+            ii.CiscoIOSImageFileScanner(args.scan, all_args)
 
 if __name__ == '__main__':
     main()
