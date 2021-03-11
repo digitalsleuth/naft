@@ -120,9 +120,9 @@ def IOSCWStringsSub(data):
     keys = list(oCWStrings.dCWStrings.keys())
     keys.sort()
     for key in keys:
-        if key == 'CW_SYSDESCR':
-            print('{}:'.format(key))
-            print(oCWStrings.dCWStrings[key])
+        if key == b'CW_SYSDESCR':
+            print('{}:'.format(key.decode('utf-8')))
+            print(oCWStrings.dCWStrings[key].decode('utf-8'))
         else:
             print('{}:{}{}'.format(key.decode('utf-8'), (' ' * (22 - len(key))), oCWStrings.dCWStrings[key].decode('utf-8')))
 
