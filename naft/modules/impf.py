@@ -373,7 +373,7 @@ class cIOSProcess:
         self.error = ''
         self.processID = processID
         self.data = data
-        self.indexProcessEnd = self.data.find(cCiscoMagic.STR_PROCESS_END)
+        self.indexProcessEnd = self.data.find(cCiscoMagic.STR_PROCESS_END, 690, len(data)) #BEEFCAFE can appear early in the process as well, parse for one near end of known range
         if self.indexProcessEnd < 0:
             self.error = 'Error: parsing process structure, BEEFCAFE not found'
             return
@@ -440,8 +440,8 @@ class cIOSProcess:
 
     @classmethod
     def Ty2Str(cls, number):
-        dTys = {0:'*', 4:'we', 6:'si', 7:'sp', 8:'st'}
-        #dTys = {0:'*', 1:'E', 2:'S', 3:'rd', 4:'we', 5:'sa', 6:'si', 7:'sp', 8:'st', 9:'hg', 10:'xx'} # untested
+        #dTys = {0:'*', 4:'we', 6:'si', 7:'sp', 8:'st'}
+        dTys = {0:'*', 1:'E', 2:'S', 3:'rd', 4:'we', 5:'sa', 6:'si', 7:'sp', 8:'st', 9:'hg', 10:'xx'} # untested
         if number in dTys:
             return dTys[number]
         else:
@@ -459,7 +459,7 @@ class cIOSProcess:
                 dStats[index] = {integer32:1}
 
     def Line(self):
-        line = '%4d %s%-2s ' % (self.processID, self.Q_str, self.Ty_str)
+        line = '{:4d} {}{:<2} '.format(self.processID, self.Q_str, self.Ty_str)
         if self.PC == None:
             line += '???????? '
         else:
@@ -467,27 +467,31 @@ class cIOSProcess:
         if self.Runtime == None:
             line += '       ? '
         else:
-            line += '%8d ' % self.Runtime
+            line += '    {:8d} '.format(self.Runtime)
         if self.Invoked == None:
             line += '       ? '
         else:
-            line += '%8d ' % self.Invoked
+            line += '  {:8d} '.format(self.Invoked)
         if self.Invoked == 0 or self.Invoked == None or self.Runtime == None:
             line += '      ?'
         else:
-            line += '%7d' % (self.Runtime * 1000 / self.Invoked)
+            line += '{:7d}'.format(int(self.Runtime * 1000 / self.Invoked))
         if self.LowWaterMark == None:
             line += '    ?/'
         else:
-            line += '%5d/' % self.LowWaterMark
+            line += '{:5d}/'.format(self.LowWaterMark)
         if self.Stack2 == None:
             line += '?     '
         else:
-            line += '%-5d ' % self.Stack2
+            line += '{:<5d} '.format(self.Stack2)
         if self.TTY == None:
             line += ' ? '
         else:
-            line += '%2d ' % self.TTY
+            line += '{:>2d} '.format(self.TTY)
+        if self.addressStackBlock == None:
+            line += '       ? '
+        else:
+            line += '{:08X} '.format(self.addressStackBlock)
         line += uf.cn(self.name)
         return line
 

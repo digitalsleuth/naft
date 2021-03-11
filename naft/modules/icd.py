@@ -180,6 +180,7 @@ def IOSProcesses(coredumpFilename, arguments):
         print(oIOSCoreDumpAnalysis.error)
         return
 
+    print(" PID QTy       PC Runtime (ms)    Invoked   uSecs    Stacks TTY StackBlk Process")
     for (processID, addressProcess, oIOSProcess) in oIOSCoreDumpAnalysis.processes:
         if arguments['filter'] == '' or processID == int(arguments['filter']):
             if oIOSProcess != None:
@@ -191,7 +192,7 @@ def IOSProcesses(coredumpFilename, arguments):
                 if arguments['dump']:
                     uf.DumpBytes(oIOSProcess.data, addressProcess)
             else:
-                print('addressProcess not found {:d} {:08X}'.format(processID, addressProcess))
+                print(' {:>3d} {:08X} - addressProcess not found'.format(processID, addressProcess))
 
     if oIOSCoreDumpAnalysis.RanHeuristics:
         print('')

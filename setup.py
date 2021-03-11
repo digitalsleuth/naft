@@ -8,7 +8,7 @@ with open("README.md", encoding='utf8') as readme:
 
 setup(
     name="naft",
-    version="1.0.0",
+    version="1.0.0b1",
     author="@digitalsleuth and @G-K7",
     license="None",
     url="https://github.com/digitalsleuth/naft",
