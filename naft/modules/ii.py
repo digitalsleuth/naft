@@ -58,7 +58,7 @@ def CiscoIOSImageFileParser(filename, arguments):
         print('\nELF Headers:\n')
         print(f"index {'index_str': >10} {'type': >10} {'flags': >10} {'offset': >10} {'size': >10} {'data': >10}")
         for oSectionHeader in oIOSImage.oELF.sections:
-            print('   {:2d}    {:->7s} {:>10d} {:10d}   {:08X} {:>10d}       {}'.format(
+            print('   {:2d}    {:>7s} {:>10d} {:10d}   {:08X} {:>10d}       {}'.format(
                 oSectionHeader.nameIndex,
                 oSectionHeader.nameIndexString,
                 oSectionHeader.type,
@@ -136,6 +136,10 @@ def CiscoIOSImageFileScanner(filewildcard, arguments):
         fPickle.close()
         print('Pickle file loaded')
 
+    header = ['counter','countFilenames','filename','CW_VERSION','CW_FAMILY','imageSize','entropy','errorCode','oELFerrorCode','oELFsectionCount','oELFstringTableIndex','cksumCompressed','cksumCompEqCalculated','cksumUncompressed','cksumUncompEqCalculated','uncompressedFilename','embeddedMD5']
+    if arguments['md5db']:
+        header.extend(['md5hash','csvFilename','dbFilename'])
+    print(','.join(header))
     while len(filenames) > 0:
         filename = filenames[0]
         try:
@@ -156,10 +160,10 @@ def CiscoIOSImageFileScanner(filewildcard, arguments):
                     str(oIOSImage.oELF.error),
                     str(oIOSImage.oELF.countSections),
                     str(uf.cn(oIOSImage.oELF.stringTableIndex)),
-                    uf.cn(oIOSImage.checksumCompressed, '0x%08X'),
+                    '0x{:08X}'.format(uf.cn(oIOSImage.checksumCompressed)),
                     str(oIOSImage.checksumCompressed != None and \
                     oIOSImage.checksumCompressed == oIOSImage.calculatedChecksumCompressed),
-                    uf.cn(oIOSImage.checksumUncompressed, '0x%08X'),
+                    '0x{:08X}'.format(uf.cn(oIOSImage.checksumUncompressed)),
                     str(oIOSImage.checksumUncompressed != None and \
                     oIOSImage.checksumUncompressed == oIOSImage.calculatedChecksumUncompressed),
                     uf.cn(oIOSImage.imageUncompressedName),

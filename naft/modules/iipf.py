@@ -249,23 +249,24 @@ class cIOSImage:
 
     def Print(self):
         print('IOS Image Metadata:\n')
-        if self.oCWStrings != None and self.oCWStrings.error == '':
-            for key in ['CW_VERSION', 'CW_FAMILY', 'CW_FEATURE', 'CW_IMAGE', 'CW_SYSDESCR']:
+        if self.oCWStrings != None and self.oCWStrings.error == None:
+            for key in [b'CW_VERSION', b'CW_FAMILY', b'CW_FEATURE', b'CW_IMAGE', b'CW_SYSDESCR']:
                 if key in self.oCWStrings.dCWStrings:
-                    print('{}:{}{}'.format(key, ' ' * (22 - len(key)), self.oCWStrings.dCWStrings[key]))
+                    print('{}:{}{}'.format(key.decode('utf-8'), ' ' * (22 - len(key)), self.oCWStrings.dCWStrings[key].decode('utf-8')))
 
+        booleanValue = {True: 'identical', False: 'DIFFERENT'}
         if self.oELF.error == 0:
             print('Entry point:           0x{:08X}'.format(self.oELF.addressEntry))
             print('Number of sections:    {:d}'.format(self.oELF.countSections))
             print('Embedded MD5:          {}'.format(uf.cn(self.embeddedMD5)))
-#           print('Calculated MD5:        %s' % uf.cn(self.calculatedMD5))
-            print('Compressed size:       %s' % uf.cn(self.sizeCompressed, '%d'))
-            print('Checksum compressed:   %s' % uf.cn(self.checksumCompressed, '0x%08X'))
-            print('Calculated checksum:   %s (%s)' % (uf.cn(self.calculatedChecksumCompressed, '0x%08X'), uf.iif(self.checksumCompressed == self.calculatedChecksumCompressed, 'identical', 'DIFFERENT')))
-            print('Uncompressed size:     %s' % uf.cn(self.sizeUncompressed, '%d'))
-            print('Image name:            %s' % uf.cn(self.imageUncompressedName))
-            print('Checksum uncompressed: %s' % uf.cn(self.checksumUncompressed, '0x%08X'))
-            print('Calculated checksum:   %s (%s)' % (uf.cn(self.calculatedChecksumUncompressed, '0x%08X'), uf.iif(self.checksumUncompressed == self.calculatedChecksumUncompressed, 'identical', 'DIFFERENT')))
+            print('Calculated MD5:        {}'.format(uf.cn(self.calculatedMD5)))
+            print('Compressed size:       {:d}'.format(uf.cn(self.sizeCompressed)))
+            print('Checksum compressed:   0x{:08X}'.format(uf.cn(self.checksumCompressed)))
+            print('Calculated checksum:   0x{:08X} ({})'.format(uf.cn(self.calculatedChecksumCompressed), booleanValue[self.checksumCompressed == self.calculatedChecksumCompressed]))
+            print('Uncompressed size:     {:d}'.format(uf.cn(self.sizeUncompressed)))
+            print('Image name:            {}'.format(uf.cn(self.imageUncompressedName)))
+            print('Checksum uncompressed: 0x{:08X}'.format(uf.cn(self.checksumUncompressed)))
+            print('Calculated checksum:   0x{:08X} ({})'.format(uf.cn(self.calculatedChecksumUncompressed), booleanValue[self.checksumUncompressed == self.calculatedChecksumUncompressed]))
 
     def Compress(self, filenameUncompressedImage, imageUncompressed):
         oStringIO = BytesIO()

@@ -21,7 +21,7 @@ class cFrames():
         self.dFilenameIndexLength = {}
 
     def AddFramePrivate(self, index, data, duplicates, filename=''):
-        filenameIndexLength = '%s-%d-%d' % (filename, index, len(data))
+        filenameIndexLength = '{}-{:d}-{:d}'.format(filename, index, len(data))
         if filenameIndexLength in self.dFilenameIndexLength:
             return False
         self.dFilenameIndexLength[filenameIndexLength] = True

@@ -127,7 +127,7 @@ def Timestamp(epoch=None):
         localTime = time.localtime()
     else:
         localTime = time.localtime(epoch)
-    return '%04d%02d%02d-%02d%02d%02d' % localTime[0:6]
+    return '{:04d}{:02d}{:02d}-{:02d}{:02d}{:02d}'.format(localTime[0:6])
 
 
 def LogLine(line):

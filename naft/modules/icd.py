@@ -243,7 +243,8 @@ def IOSHistory(coredumpFilename, arguments=None):
             history.append((uf.parse_dtg(oMatch.group(2).decode('utf-8')), oMatch.group(1).decode('utf-8')))
     for command in sorted(history, key=lambda x: x[0]):
         print(f"{command[0].strftime('%b %d %Y %H:%M:%S')} UTC: {command[1]}")
-
+    if not history:
+        print('No history found')
 
 def IOSEvents(coredumpFilename, arguments=None):
     events = []
@@ -331,7 +332,7 @@ def IOSCheckText(coredumpFilename, imageFilename, arguments):
     if countBytesDifferent == 0:
         print('text region and section are identical')
     else:
-        print('number of different bytes: %d (%.2f%%)' % (countBytesDifferent, (countBytesDifferent * 100.0) / shortestLength))
+        print('number of different bytes: {:d} ({:.2f}%)'.format(countBytesDifferent, (countBytesDifferent * 100.0) / shortestLength))
 
 # http://phrack.org/issues/60/7.html
 def IOSIntegrityText(coredumpFilename, arguments):
