@@ -11,6 +11,7 @@ import os
 import zipfile
 import datetime as dt
 import re
+from dateutil import parser as duparser
 
 MALWARE_PASSWORD = 'infected'
 
@@ -105,20 +106,11 @@ def FindAllStrings(string, search):
     return indices
 
 
-def iif(booleanExpression, valueTrue, valueFalse):
-    if booleanExpression:
-        return valueTrue
-    else:
-        return valueFalse
-
-
-def cn(value, format=None):
+def cn(value):
     if value == None:
         return 'Not found'
-    elif format == None:
-        return value
     else:
-        return format % value
+        return value
 
 
 def Timestamp(epoch=None):
@@ -134,41 +126,15 @@ def LogLine(line):
 
 
 def ParseDateTime(dtg_str):
-    months = {
-        "Jan": 1,
-        "Feb": 2,
-        "Mar": 3,
-        "Apr": 4,
-        "May": 5,
-        "Jun": 6,
-        "Jul": 7,
-        "Aug": 8,
-        "Sep": 9,
-        "Oct": 10,
-        "Nov": 11,
-        "Dec": 12
-    }
-
     dtg_events = re.compile("([A-Za-z]{3})\s([\s\d]{2})\s(\d{2}):(\d{2}):(\d{2})\.(\d{3})")
     dtg_hist = re.compile("(\d{2}):(\d{2}):(\d{2})\s([A-Z]+)\s([A-Za-z]+)\s([A-Za-z]{3})\s([\s\d]+)\s(\d{4})")
     if dtg_hist.match(dtg_str):
-        dtg = dtg_hist.match(dtg_str)
-        time_stamp = dt.datetime(int(dtg.group(8)), # Year
-                                 months[dtg.group(6)],  # Month
-                                 int(dtg.group(7)), #Day
-                                 int(dtg.group(1)),  # Hour
-                                 int(dtg.group(2)),  # Minutes
-                                 int(dtg.group(3)) # Seconds
-                                 )
+        parsed_date = duparser.parse(dtg_str[0:28])
+        time_stamp = parsed_date.strftime('%b %d %Y %H:%M:%S %Z')
     else:
         dtg = dtg_events.match(dtg_str[1:20])
-        time_stamp = dt.datetime(dt.date.today().year,  # Current year
-                                 months[dtg.group(1)],  # Month
-                                 int(dtg.group(2)),  # Day
-                                 int(dtg.group(3)),  # Hour
-                                 int(dtg.group(4)),  # Minutes
-                                 int(dtg.group(5))  # Seconds
-                                 ), dtg.group(6)  # Milliseconds
+        parsed_date = duparser.parse(dtg_str[1:20])
+        time_stamp = parsed_date.strftime('%b %d %Y %H:%M:%S.%f')[:-3]
     return time_stamp
 
 class cBufferFile():

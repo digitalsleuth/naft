@@ -8,9 +8,9 @@ __date__ = '2021/03/05'
 
 import struct
 import re
-import sys
 import os
 import binascii
+from datetime import datetime
 import naft.modules.uf as uf
 import naft.modules.impf as impf
 import naft.modules.pfef as pfef
@@ -241,8 +241,8 @@ def IOSHistory(coredumpFilename, arguments=None):
         oMatch = re.search(b"'(.+)' (.+)", command)
         if oMatch:
             history.append((uf.ParseDateTime(oMatch.group(2).decode('utf-8')), oMatch.group(1).decode('utf-8')))
-    for command in sorted(history, key=lambda x: x[0]):
-        print(f"{command[0].strftime('%b %d %Y %H:%M:%S')} UTC: {command[1]}")
+    for command in sorted(history, key=lambda x: datetime.strptime(x[0], '%b %d %Y %H:%M:%S %Z')):
+        print('{}: {}'.format(command[0], command[1]))
     if not history:
         print('No history found')
 
@@ -252,8 +252,10 @@ def IOSEvents(coredumpFilename, arguments=None):
         dtg = uf.ParseDateTime(raw_event.decode('utf-8'))
         data = raw_event[22:].decode('utf-8')
         events.append((dtg, data))
-    for event in sorted(events, key=lambda x: x[0][0]):
-        print(f"{event[0][0].strftime('%b %d %Y %H:%M:%S')}.{event[0][1]} UTC: {event[1]}")
+    for event in sorted(events, key=lambda x: datetime.strptime(x[0].split(',')[0], '%b %d %Y %H:%M:%S.%f')):
+        print('{} UTC: {}'.format(event[0], event[1]))
+    if not events:
+        print('No events found')
 
 def IOSCheckText(coredumpFilename, imageFilename, arguments):
     print("Comparing CW_SYSDESCR between core dump and IOS image")
