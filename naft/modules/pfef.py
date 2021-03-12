@@ -34,7 +34,7 @@ class cFrames():
         return True
 
     def AddFrame(self, index, data, duplicates, filename=''):
-        if self.dOUI == {} or binascii.hexlify(data[0:3]) in self.dOUI or binascii.hexlify(data[6:9]) in self.dOUI:
+        if self.dOUI == {} or data[0:3].hex() in self.dOUI or data[6:9].hex() in self.dOUI:
             if self.AddFramePrivate(index, data, duplicates, filename):
                 self.countFrames += 1
 
@@ -96,7 +96,7 @@ def CalculateIPChecksum(data):
         s = CarryAroundAdd(s, data[i] + ((data[i+1]) << 8))
     return ~s & 0xffff
 
-# search for bytes between 0x45 and 0x4F (depending flag options) and check if they are the start op a IPv4 header by calculating and comparing the checksum
+# search for bytes between 0x45 and 0x4F (depending flag options) and check if they are the start of an IPv4 header by calculating and comparing the checksum
 def ExtractIPPackets(oFrames, baseAddress, data, options, duplicates, multiple, filename=''):
     found = False
     if options:

@@ -25,7 +25,7 @@ def ExtractIPPacketsFromFile(filenamesRawData, filenamePCAP, arguments):
             uf.LogLine('Buffering file {}'.format(filenameRawData))
             oBufferFile = uf.cBufferFile(filenameRawData, arguments['buffersize'] * 1024 * 1024, arguments['bufferoverlapsize'] * 1024 * 1024)
             while oBufferFile.Read():
-                uf.LogLine('Processing buffer 0x{:x} size {:d} MB {:d}%'.format(oBufferFile.index, len(oBufferFile.buffer) / 1024 / 1024, oBufferFile.Progress()))
+                uf.LogLine('Processing buffer 0x{:x} size {:.2f} MB {:d}%'.format(oBufferFile.index, len(oBufferFile.buffer) / 1024 / 1024, oBufferFile.Progress()))
                 uf.LogLine('Searching for IPv4 packets')
                 pfef.ExtractIPPackets(oFrames, oBufferFile.index, oBufferFile.buffer, arguments['options'], arguments['duplicates'], True, filenameRawData)
                 uf.LogLine('Searching for ARP Ethernet frames')

@@ -23,7 +23,7 @@ def missing_req(requirement):
         'bin': 'Please provide an IOS bin file.',
         'iomem': 'Please provide an IOMEM file using the --iomem argument.',
         'pcap' : 'Please provide a PCAP output filename using the --pcap argument.',
-        'list' : 'Please use the --list command to provide at least one file to search.',
+        'files' : 'Please use the --files command to provide at least one file to search.',
         'output' : 'This command requires dumping files to disk, please use the -o/--output argument.',
         'coremem': 'Please provide core dump and IOMEM files using --coredump & --iomem arguments.',
         'strings': 'The -g/--grep command requires -s/--strings, please retry your command with -s/--strings.'
@@ -70,16 +70,16 @@ def main():
     network = network_parser.add_argument_group('functions')
     network_group = network.add_mutually_exclusive_group(required=True)
     network_group.add_argument('--frames', help='Extract frames and store them in a .pcap file, requires --coredump & --iomem', metavar='PCAP')
-    network_group.add_argument('--packets', help='Extract packets and store them in a .pcap file, requires --list', metavar='PCAP')
+    network_group.add_argument('--packets', help='Extract packets and store them in a .pcap file, requires --files', metavar='PCAP')
     frames = network_parser.add_argument_group('Frames options')
     frames.add_argument('--coredump', help='Core dump file', metavar='FILE')
     frames.add_argument('--iomem', help='iomem dump file', metavar='FILE')
     frames.add_argument('-v', '--verbose', action='store_true', default=False, help='Increase output verbosity')
     packets = network_parser.add_argument_group('Packets options')
-    packets.add_argument('--list', nargs='+', metavar='FILE', help='List of files to extract packets from, use --list <file1> <file2>')
+    packets.add_argument('--files', nargs='+', metavar='FILE', help='List of files to extract packets from, use --files <file1> <file2>')
     packets.add_argument('-d', '--duplicates', action='store_true', default=False, help='Include duplicates')
     packets.add_argument('-p', '--options', action='store_true', default=False, help='Search for IPv4 headers with options')
-    packets.add_argument('-t', '--ouitxt', help='File containing OUI\'s to filter for MAC addresses with unknown ID')
+    packets.add_argument('-t', '--ouitxt', help='File containing OUI\'s to filter for MAC addresses')
     packets.add_argument('-b', '--buffer', action='store_true', default=False, help='Buffer the file in 100MB blocks with 1MB overlap')
     packets.add_argument('-B', '--buffersize', type=int, default=100, help='Explicitly set size of buffer in MB (default 100MB)')
     packets.add_argument('-O', '--bufferoverlapsize', type=int, default=1, help='Explicitly set size of buffer overlap in MB (default 1MB)')
@@ -137,10 +137,10 @@ def main():
             else:
                 gfe.IOSFrames(args.coredump, args.iomem, args.frames, all_args)
         elif args.packets is not None:
-            if not args.list:
-                missing_req('list')
+            if not args.files:
+                missing_req('files')
             else:
-                gfe.ExtractIPPacketsFromFile(args.list, args.packets, all_args)
+                gfe.ExtractIPPacketsFromFile(args.files, args.packets, all_args)
 
     if sys.argv[1] == 'image':
         if args.extract or args.ida or args.info:
