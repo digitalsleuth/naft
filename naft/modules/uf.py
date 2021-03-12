@@ -12,11 +12,26 @@ import zipfile
 import datetime as dt
 import re
 from dateutil import parser as duparser
+from concurrent.futures import ProcessPoolExecutor
 
 MALWARE_PASSWORD = 'infected'
 
+def InProgress(function, obj):
+    animation = "|/-\\"
+    idx = 0
+    pool = ProcessPoolExecutor(3)
+    future = pool.submit(function, (obj))
+
+    while not future.done():
+        print("Processing... "+animation[idx % len(animation)], end="\r")
+        idx += 1
+        time.sleep(0.1)
+
+    return future.result()
+
+
 def IsZIPFile(filename):
-    return filename.lower().endswith('.zip')
+    return filename.name.lower().endswith('.zip')
 
 
 def File2Data(filename):
