@@ -9,7 +9,6 @@ __date__ = '2021/03/05'
 import time
 import os
 import zipfile
-import sys
 import datetime as dt
 import re
 
@@ -127,12 +126,50 @@ def Timestamp(epoch=None):
         localTime = time.localtime()
     else:
         localTime = time.localtime(epoch)
-    return '{:04d}{:02d}{:02d}-{:02d}{:02d}{:02d}'.format(localTime[0:6])
+    return time.strftime('%Y%m%d-%H%M%S', localTime)
 
 
 def LogLine(line):
     print('{}: {}'.format(Timestamp(), line))
 
+
+def ParseDateTime(dtg_str):
+    months = {
+        "Jan": 1,
+        "Feb": 2,
+        "Mar": 3,
+        "Apr": 4,
+        "May": 5,
+        "Jun": 6,
+        "Jul": 7,
+        "Aug": 8,
+        "Sep": 9,
+        "Oct": 10,
+        "Nov": 11,
+        "Dec": 12
+    }
+
+    dtg_events = re.compile("([A-Za-z]{3})\s([\s\d]{2})\s(\d{2}):(\d{2}):(\d{2})\.(\d{3})")
+    dtg_hist = re.compile("(\d{2}):(\d{2}):(\d{2})\s([A-Z]+)\s([A-Za-z]+)\s([A-Za-z]{3})\s([\s\d]+)\s(\d{4})")
+    if dtg_hist.match(dtg_str):
+        dtg = dtg_hist.match(dtg_str)
+        time_stamp = dt.datetime(int(dtg.group(8)), # Year
+                                 months[dtg.group(6)],  # Month
+                                 int(dtg.group(7)), #Day
+                                 int(dtg.group(1)),  # Hour
+                                 int(dtg.group(2)),  # Minutes
+                                 int(dtg.group(3)) # Seconds
+                                 )
+    else:
+        dtg = dtg_events.match(dtg_str[1:20])
+        time_stamp = dt.datetime(dt.date.today().year,  # Current year
+                                 months[dtg.group(1)],  # Month
+                                 int(dtg.group(2)),  # Day
+                                 int(dtg.group(3)),  # Hour
+                                 int(dtg.group(4)),  # Minutes
+                                 int(dtg.group(5))  # Seconds
+                                 ), dtg.group(6)  # Milliseconds
+    return time_stamp
 
 class cBufferFile():
     def __init__(self, filename, buffersize, bufferoverlapsize):
@@ -194,44 +231,3 @@ class cBufferFile():
 
     def Progress(self):
         return int(float(self.bytesread) / float(self.filesize) * 100.0)
-
-
-months = {
-    "Jan": 1,
-    "Feb": 2,
-    "Mar": 3,
-    "Apr": 4,
-    "May": 5,
-    "Jun": 6,
-    "Jul": 7,
-    "Aug": 8,
-    "Sep": 9,
-    "Oct": 10,
-    "Nov": 11,
-    "Dec": 12
-}
-
-dtg_events = re.compile("([A-Za-z]{3})\s([\s\d]{2})\s(\d{2}):(\d{2}):(\d{2})\.(\d{3})")
-dtg_hist = re.compile("(\d{2}):(\d{2}):(\d{2})\s([A-Z]+)\s([A-Za-z]+)\s([A-Za-z]{3})\s([\s\d]+)\s(\d{4})")
-
-
-def parse_dtg(dtg_str):
-    if dtg_hist.match(dtg_str):
-        dtg = dtg_hist.match(dtg_str)
-        return dt.datetime(int(dtg.group(8)), # Year
-                            months[dtg.group(6)],  # Month
-                            int(dtg.group(7)), #Day
-                            int(dtg.group(1)),  # Hour
-                            int(dtg.group(2)),  # Minutes
-                            int(dtg.group(3)) # Seconds
-                            )
-
-    else:
-        dtg = dtg_events.match(dtg_str[1:20])
-        return (dt.datetime(dt.date.today().year,  # Current year
-                            months[dtg.group(1)],  # Month
-                            int(dtg.group(2)),  # Day
-                            int(dtg.group(3)),  # Hour
-                            int(dtg.group(4)),  # Minutes
-                            int(dtg.group(5))  # Seconds
-                            ), dtg.group(6))  # Milliseconds

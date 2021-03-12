@@ -240,7 +240,7 @@ def IOSHistory(coredumpFilename, arguments=None):
     for command in FilterInitBlocksForString(coredumpFilename, b'CMD: '):
         oMatch = re.search(b"'(.+)' (.+)", command)
         if oMatch:
-            history.append((uf.parse_dtg(oMatch.group(2).decode('utf-8')), oMatch.group(1).decode('utf-8')))
+            history.append((uf.ParseDateTime(oMatch.group(2).decode('utf-8')), oMatch.group(1).decode('utf-8')))
     for command in sorted(history, key=lambda x: x[0]):
         print(f"{command[0].strftime('%b %d %Y %H:%M:%S')} UTC: {command[1]}")
     if not history:
@@ -249,7 +249,7 @@ def IOSHistory(coredumpFilename, arguments=None):
 def IOSEvents(coredumpFilename, arguments=None):
     events = []
     for raw_event in FilterInitBlocksForString(coredumpFilename, b': %'):
-        dtg = uf.parse_dtg(raw_event.decode('utf-8'))
+        dtg = uf.ParseDateTime(raw_event.decode('utf-8'))
         data = raw_event[22:].decode('utf-8')
         events.append((dtg, data))
     for event in sorted(events, key=lambda x: x[0][0]):

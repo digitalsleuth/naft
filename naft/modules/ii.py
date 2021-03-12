@@ -136,10 +136,28 @@ def CiscoIOSImageFileScanner(filewildcard, arguments):
         fPickle.close()
         print('Pickle file loaded')
 
-    header = ['counter','countFilenames','filename','CW_VERSION','CW_FAMILY','imageSize','entropy','errorCode','oELFerrorCode','oELFsectionCount','oELFstringTableIndex','cksumCompressed','cksumCompEqCalculated','cksumUncompressed','cksumUncompEqCalculated','uncompressedFilename','embeddedMD5']
+    scan_header = [
+        'counter',
+        'countFilenames',
+        'filename',
+        'CW_VERSION',
+        'CW_FAMILY',
+        'imageSize',
+        'entropy',
+        'errorCode',
+        'oELFerrorCode',
+        'oELFsectionCount',
+        'oELFstringTableIndex',
+        'cksumCompressed',
+        'cksumCompEqCalculated',
+        'cksumUncompressed',
+        'cksumUncompEqCalculated',
+        'uncompressedFilename',
+        'embeddedMD5'
+        ]
     if arguments['md5db']:
-        header.extend(['md5hash','csvFilename','dbFilename'])
-    print(','.join(header))
+        scan_header.extend(['md5hash','csvFilename','dbFilename'])
+    print(','.join(scan_header))
     while len(filenames) > 0:
         filename = filenames[0]
         try:
