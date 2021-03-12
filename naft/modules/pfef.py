@@ -9,7 +9,6 @@ __date__ = '2021/03/05'
 import struct
 import hashlib
 import re
-import binascii
 
 class cFrames():
     def __init__(self, ouiFilename=None):
