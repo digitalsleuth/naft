@@ -9,7 +9,6 @@ __date__ = '2021/03/05'
 import struct
 import re
 import os
-import binascii
 from datetime import datetime
 import naft.modules.uf as uf
 import naft.modules.impf as impf

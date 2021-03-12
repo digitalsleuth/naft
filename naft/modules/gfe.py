@@ -6,12 +6,10 @@ __original_author__ = 'Didier Stevens'
 __current_authors__ = '@digitalsleuth and @G-K7'
 __date__ = '2021/03/05'
 
-import glob
 import struct
 import naft.modules.impf as impf
 import naft.modules.uf as uf
 import naft.modules.pfef as pfef
-import time
 
 def ExtractIPPacketsFromFile(filenamesRawData, filenamePCAP, arguments):
     uf.LogLine('Start')
