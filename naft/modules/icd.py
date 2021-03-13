@@ -15,14 +15,15 @@ import naft.modules.impf as impf
 import naft.modules.pfef as pfef
 import naft.modules.iipf as iipf
 
+
 def IOSRegions(coredumpFilename, arguments):
     oIOSCoreDump = impf.cIOSCoreDump(coredumpFilename)
-    if oIOSCoreDump.error != None:
+    if oIOSCoreDump.error is not None:
         print(oIOSCoreDump.error)
     else:
         print('Start      End        Size       Name')
         for region in oIOSCoreDump.regions:
-            if region[2] != None:
+            if region[2] is not None:
                 print('0x{:08X} 0x{:08X} {:<10d} {}'.format(region[1], (region[1] + region[2] - 1), region[2], region[0]))
                 if arguments['output']:
                     uf.Data2File(oIOSCoreDump.Region(region[0])[1], '{}-{}-0x{:08X}'.format(os.path.basename(coredumpFilename), region[0], region[1]), arguments['output'])
@@ -47,7 +48,7 @@ def File2Strings(filename):
 def ProcessAt(argument):
     if argument.startswith('@'):
         strings = File2Strings(argument[1:])
-        if strings == None:
+        if strings is None:
             raise Exception('Error reading {}'.format(argument))
         else:
             return strings
@@ -68,15 +69,15 @@ def ProcessHeap(oIOSMemoryBlockHeader, arguments, coredumpFilename, output_path=
                         print(oIOSMemoryBlockHeader.ShowLine())
                         printHeader = False
                     print(' {:08X}: {}'.format(
-                    oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.BlockSize + key, value.decode('utf-8')))
+                        oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.BlockSize + key, value.decode('utf-8')))
         elif arguments['minimum'] == 0 or len(dStrings) >= arguments['minimum']:
             print(oIOSMemoryBlockHeader.ShowLine())
             for key, value in dStrings.items():
                 print(' {:08X}: {}'.format(
-                oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.BlockSize + key, value.decode('utf-8')))
+                    oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.BlockSize + key, value.decode('utf-8')))
     if arguments['dump']:
         uf.DumpBytes(oIOSMemoryBlockHeader.GetData(),
-                          oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.headerSize)
+                     oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.headerSize)
     if arguments['dumpraw']:
         uf.DumpBytes(oIOSMemoryBlockHeader.GetRawData(), oIOSMemoryBlockHeader.address)
     if arguments['output']:
@@ -86,17 +87,17 @@ def ProcessHeap(oIOSMemoryBlockHeader, arguments, coredumpFilename, output_path=
 
 
 def IOSHeap(coredumpFilename, arguments):
-    if arguments['output'] != None:
+    if arguments['output'] is not None:
         output_path = os.path.join(arguments['output'], "heap_data")
         os.mkdir(output_path)
     else:
         output_path = ''
     oIOSCoreDump = impf.cIOSCoreDump(coredumpFilename)
-    if oIOSCoreDump.error != None:
+    if oIOSCoreDump.error is not None:
         print(oIOSCoreDump.error)
         return
     addressHeap, memoryHeap = oIOSCoreDump.RegionHEAP()
-    if memoryHeap == None:
+    if memoryHeap is None:
         print('Heap region not found')
         return
     oIOSMemoryParser = impf.cIOSMemoryParser(memoryHeap)
@@ -115,7 +116,7 @@ def IOSHeap(coredumpFilename, arguments):
 
 def IOSCWStringsSub(data):
     oCWStrings = impf.cCiscoCWStrings(data)
-    if oCWStrings.error != None:
+    if oCWStrings.error is not None:
         print(oCWStrings.error)
         return
     keys = list(oCWStrings.dCWStrings.keys())
@@ -131,17 +132,17 @@ def IOSCWStringsSub(data):
 def IOSCWStrings(coredumpFilename, arguments):
     if arguments['raw']:
         coredump = uf.File2Data(coredumpFilename)
-        if coredump == None:
+        if coredump is None:
             print('Error reading file {}'.format(coredumpFilename))
         else:
             IOSCWStringsSub(coredump)
     else:
         oIOSCoreDump = impf.cIOSCoreDump(coredumpFilename)
-        if oIOSCoreDump.error  != None:
+        if oIOSCoreDump.error is not None:
             print(oIOSCoreDump.error)
             return
         addressData, memoryData = oIOSCoreDump.RegionDATA()
-        if memoryData == None:
+        if memoryData is None:
             print('Data region not found')
             return
         IOSCWStringsSub(memoryData)
@@ -166,7 +167,7 @@ def PrintStatsAnalysis(dStats, oIOSCoreDump):
         unfilteredMax = max(dStats[key1])
         regionNames = []
         for region in oIOSCoreDump.regions:
-            if region[2] != None:
+            if region[2] is not None:
                 if filteredMin >= region[1] and filteredMin <= region[1] + region[2] - 1:
                     if not region[0] in regionNames:
                         regionNames.append(region[0])
@@ -180,13 +181,13 @@ def PrintStatsAnalysis(dStats, oIOSCoreDump):
 
 def IOSProcesses(coredumpFilename, arguments):
     oIOSCoreDumpAnalysis = impf.cIOSCoreDumpAnalysis(coredumpFilename)
-    if oIOSCoreDumpAnalysis.error != None:
+    if oIOSCoreDumpAnalysis.error is not None:
         print(oIOSCoreDumpAnalysis.error)
         return
     print(" PID QTy       PC Runtime (ms)    Invoked   uSecs    Stacks TTY StackBlk Process")
     for (processID, addressProcess, oIOSProcess) in oIOSCoreDumpAnalysis.processes:
         if arguments['filter'] == '' or processID == int(arguments['filter']):
-            if oIOSProcess != None:
+            if oIOSProcess is not None:
                 if oIOSProcess.error == '':
                     line = oIOSProcess.Line()
                 else:
@@ -207,7 +208,7 @@ def IOSProcesses(coredumpFilename, arguments):
         keys.sort(key=str.lower)
         for key in keys:
             value = oIOSCoreDumpAnalysis.HeuristicsFields[key]
-            if value != None:
+            if value is not None:
                 print('{:-22s}: 0x{:04X}'.format(key, value[1]))
     if arguments['stats']:
         keys = list(oIOSCoreDumpAnalysis.dProcessStructureStats.keys())
@@ -220,10 +221,10 @@ def IOSProcesses(coredumpFilename, arguments):
 
 def FilterInitBlocksForString(coredumpFilename, searchTerm):
     oIOSCoreDump = impf.cIOSCoreDump(coredumpFilename)
-    if oIOSCoreDump.error != None:
+    if oIOSCoreDump.error is not None:
         return []
     addressHeap, memoryHeap = oIOSCoreDump.RegionHEAP()
-    if memoryHeap == None:
+    if memoryHeap is None:
         print('Heap region not found')
         return []
     oIOSMemoryParser = impf.cIOSMemoryParser(memoryHeap)
@@ -265,29 +266,29 @@ def IOSEvents(coredumpFilename, arguments=None):
 def IOSCheckText(coredumpFilename, imageFilename, arguments):
     print("Comparing CW_SYSDESCR between core dump and IOS image")
     oIOSCoreDump = impf.cIOSCoreDump(coredumpFilename)
-    if oIOSCoreDump.error  != None:
+    if oIOSCoreDump.error is not None:
         print(oIOSCoreDump.error)
         return
     else:
         textAddress, textCoredump = oIOSCoreDump.RegionTEXT()
-        if textCoredump == None:
+        if textCoredump is None:
             print('Error extracting text region from coredump {}'.format(coredumpFilename))
             return
         sysdescrCoredump = ''
         dataAddress, dataCoredump = oIOSCoreDump.RegionDATA()
-        if dataCoredump != None:
+        if dataCoredump is not None:
             oCWStrings = impf.cCiscoCWStrings(dataCoredump)
-            if oCWStrings.error == None and b'CW_SYSDESCR' in oCWStrings.dCWStrings:
+            if oCWStrings.error is None and b'CW_SYSDESCR' in oCWStrings.dCWStrings:
                 sysdescrCoredump = oCWStrings.dCWStrings[b'CW_SYSDESCR'].decode('utf-8')
     image = uf.File2Data(imageFilename)
-    if image == None:
+    if image is None:
         print('Error reading image {}'.format(imageFilename))
         return
     oIOSImage = iipf.cIOSImage(image)
     if oIOSImage.error != 0:
         return
     sysdescrImage = ''
-    if oIOSImage.oCWStrings != None and oIOSImage.oCWStrings.error == None and b'CW_SYSDESCR' in oIOSImage.oCWStrings.dCWStrings:
+    if oIOSImage.oCWStrings is not None and oIOSImage.oCWStrings.error is None and b'CW_SYSDESCR' in oIOSImage.oCWStrings.dCWStrings:
         sysdescrImage = oIOSImage.oCWStrings.dCWStrings[b'CW_SYSDESCR'].decode('utf-8')
     if sysdescrCoredump != '' or sysdescrImage != '':
         if sysdescrCoredump == sysdescrImage:
@@ -309,7 +310,7 @@ def IOSCheckText(coredumpFilename, imageFilename, arguments):
     countSectionExecutableInstructions = 0
     countSectionSRELOC = 0
     for oSectionHeader in oELF.sections:
-        if oSectionHeader.flags & 4: # SHF_EXECINSTR executable instructions
+        if oSectionHeader.flags & 4:  # SHF_EXECINSTR executable instructions
             textSectionData = oSectionHeader.sectionData
             countSectionExecutableInstructions += 1
         if oSectionHeader.nameIndexString == 'sreloc':
@@ -320,7 +321,7 @@ def IOSCheckText(coredumpFilename, imageFilename, arguments):
     if countSectionSRELOC != 0:
         print('Error found {:d} sreloc section in image: checktext command does not support relocation'.format(countSectionSRELOC))
         return
-    start = textAddress & 0xFF # to be further researched
+    start = textAddress & 0xFF  # to be further researched
     textImage = textSectionData[start:start + len(textCoredump)]
     if len(textCoredump) != len(textImage):
         print('the text region is longer than the text section')
@@ -341,11 +342,11 @@ def IOSCheckText(coredumpFilename, imageFilename, arguments):
 
 def IOSIntegrityText(coredumpFilename, arguments):
     oIOSCoreDump = impf.cIOSCoreDump(coredumpFilename)
-    if oIOSCoreDump.error  != None:
+    if oIOSCoreDump.error is not None:
         print(oIOSCoreDump.error)
         return
     addressHeap, memoryHeap = oIOSCoreDump.RegionHEAP()
-    if memoryHeap == None:
+    if memoryHeap is None:
         print('Heap region not found')
         return
     oIOSMemoryParser = impf.cIOSMemoryParser(memoryHeap)

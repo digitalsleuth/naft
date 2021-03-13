@@ -22,9 +22,9 @@ def missing_req(requirement):
         'core': 'Please provide a core dump using the --coredump argument.',
         'bin': 'Please provide an IOS bin file using the -b/--bin argument.',
         'iomem': 'Please provide an IOMEM file using the --iomem argument.',
-        'pcap' : 'Please provide a PCAP output filename using the --pcap argument.',
-        'files' : 'Please use the --files command to provide at least one file to search.',
-        'output' : 'This command requires dumping files to disk, please use the -o/--output argument.',
+        'pcap': 'Please provide a PCAP output filename using the --pcap argument.',
+        'files': 'Please use the --files command to provide at least one file to search.',
+        'output': 'This command requires dumping files to disk, please use the -o/--output argument.',
         'coremem': 'Please provide core dump and IOMEM files using --coredump & --iomem arguments.',
         'strings': 'The -g/--grep command requires -s/--strings, please retry your command with -s/--strings.'
     }
@@ -39,7 +39,6 @@ def main():
         epilog="Use -h on each category to view all available options."
     )
     subparsers = main_parser.add_subparsers(title='categories', metavar='Select one of the three following categories to begin analysis', prog='naft')
-
 
     core_parser = subparsers.add_parser('core', help='Core Dump')
     core = core_parser.add_argument_group('functions')
@@ -66,7 +65,6 @@ def main():
     core_parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Increase output verbosity')
     core_parser.add_argument('-S', '--stats', action='store_true', default=False, help='Print process structure statistics')
 
-
     network_parser = subparsers.add_parser('network', help='Generic Frame and Packet Extraction')
     network = network_parser.add_argument_group('functions')
     network_group = network.add_mutually_exclusive_group(required=True)
@@ -85,7 +83,6 @@ def main():
     packets.add_argument('-B', '--buffersize', type=int, default=100, help='Explicitly set size of buffer in MB (default 100MB)')
     packets.add_argument('-O', '--bufferoverlapsize', type=int, default=1, help='Explicitly set size of buffer overlap in MB (default 1MB)')
 
-
     image_parser = subparsers.add_parser('image', help='IOS Image Analysis')
     image = image_parser.add_argument_group('functions')
     image_group = image.add_mutually_exclusive_group(required=True)
@@ -99,7 +96,6 @@ def main():
     image_parser.add_argument('-r', '--resume', help='Resume an interrupted scan from Pickle file', metavar='PKL')
     image_parser.add_argument('-l', '--log', help='Write scan result to log file', metavar='FILE')
     image_parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Increase output verbosity')
-
 
     args = main_parser.parse_args()
     all_args = vars(args)

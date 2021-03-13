@@ -121,14 +121,14 @@ def FindAllStrings(string, search):
 
 
 def cn(value):
-    if value == None:
+    if value is None:
         return 'Not found'
     else:
         return value
 
 
 def Timestamp(epoch=None):
-    if epoch == None:
+    if epoch is None:
         localTime = time.localtime()
     else:
         localTime = time.localtime(epoch)
@@ -165,15 +165,14 @@ class cBufferFile():
         self.filesize = os.path.getsize(self.filename)
         self.bytesread = 0
 
-
     def Read(self):
-        if self.fIn == None:
+        if self.fIn is None:
             try:
                 self.fIn = open(self.filename, 'rb')
             except:
                 self.error = True
                 return False
-        if self.index == None:
+        if self.index is None:
             self.index = 0
             try:
                 self.buffer = self.fIn.read(self.buffersize + self.bufferoverlapsize)
@@ -210,7 +209,6 @@ class cBufferFile():
                 self.fIn.close()
                 self.error = True
                 return False
-
 
     def Progress(self):
         return int(float(self.bytesread) / float(self.filesize) * 100.0)

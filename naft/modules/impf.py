@@ -34,11 +34,10 @@ class cIOSCoreDump:
         self.coredumpFilename = coredumpFilename
         self.Parse()
 
-
     def Parse(self):
         self.error = None
         self.coredump = uf.File2Data(self.coredumpFilename)
-        if self.coredump == None:
+        if self.coredump is None:
             self.error = 'Error reading coredump {}'.format(self.coredumpFilename)
             return
         indexRegionsMetaData = self.coredump.find(cCiscoMagic.STR_REGIONS)
@@ -57,7 +56,7 @@ class cIOSCoreDump:
         self.size = len(self.coredump)
         addressBegin = self.address
         addressEnd = self.address + self.size
-        regionsCalculation = list(map(lambda x, y : (x, y), ('begin', 'text', 'data', 'bss'), addresses))
+        regionsCalculation = list(map(lambda x, y: (x, y), ('begin', 'text', 'data', 'bss'), addresses))
         regionsCalculation.append(('heap', addresses[0] + indexHeap))
         regionsCalculation.append(('end', addressEnd))
         indices = list(range(len(regionsCalculation)))
@@ -71,32 +70,26 @@ class cIOSCoreDump:
             regionsCalculation[value] = (regionsCalculation[value][0], regionsCalculation[value][1], length, regionsCalculation[value][1] - addressBegin)
         self.regions = regionsCalculation[:-1]
 
-
     def Region(self, name):
         for region in self.regions:
             if region[0].lower() == name.lower():
-                if region[2] == None:
+                if region[2] is None:
                     return region[1], None
                 else:
                     return region[1], self.coredump[region[3]:region[3] + region[2]]
         return None, None
 
-
     def RegionTEXT(self):
         return self.Region('text')
-
 
     def RegionDATA(self):
         return self.Region('data')
 
-
     def RegionBSS(self):
         return self.Region('bss')
 
-
     def RegionHEAP(self):
         return self.Region('heap')
-
 
     def GetString(self, address):
         index = address - self.address
@@ -109,10 +102,9 @@ class cIOSCoreDump:
             iter += 1
         return string
 
-
     def GetInteger32(self, address):
         index = address - self.address
-        if index < 0 or index -4 >= self.size:
+        if index < 0 or index - 4 >= self.size:
             return None
         return struct.unpack('>I', self.coredump[index:index + 4])[0]
 
@@ -169,12 +161,10 @@ class cIOSMemoryBlockHeader:
             self.error = 4
             return
 
-
     def ParseSizeField(self, value):
         free = value & 0x80000000 == 0x00000000
         size = (value & 0x7FFFFFFF) * 2
         return free, size
-
 
     def GetData(self):
         start = self.index + self.headerSize
@@ -183,21 +173,19 @@ class cIOSMemoryBlockHeader:
         else:
             return self.oIOSMemoryParser.memory[start:start + self.BlockSize]
 
-
     def GetRawData(self):
         return self.oIOSMemoryParser.memory[self.index:self.index + self.headerSize + self.BlockSize]
 
-
     def ShowLine(self):
-        if self.AllocNameResolved == '' or self.AllocNameResolved == None:
+        if self.AllocNameResolved == '' or self.AllocNameResolved is None:
             allocName = '{:08X}'.format(self.AllocName)
         else:
             allocName = self.AllocNameResolved
-        if self.NextFree == None:
+        if self.NextFree is None:
             NextFree = '--------'
         else:
             NextFree = '{:->8s}'.format('{:X}'.format(self.NextFree))
-        if self.PrevFree == None:
+        if self.PrevFree is None:
             PrevFree = '--------'
         else:
             PrevFree = '{:->8s}'.format('{:X}'.format(self.PrevFree))
@@ -218,12 +206,10 @@ class cIOSMemoryParser:
         self.dResolvedNames = {}
         self.Parse()
 
-
     def ParseSizeField(self, value):
         free = value & 0x80000000 == 0x80000000
         size = (value & 0x7FFFFFFF) * 2
         return free, size
-
 
     def InitialChecks(self):
         if self.length < self.headerSize:
@@ -245,7 +231,6 @@ class cIOSMemoryParser:
         self.baseAddress = header[6] - 0x14
         return True
 
-
     def ExtractHeaders(self):
         index = 0
         while True:
@@ -265,19 +250,16 @@ class cIOSMemoryParser:
                 self.dNames[oIOSMemoryBlockHeader.AllocName] = 1
             index = oIOSMemoryBlockHeader.NextBlock - self.baseAddress
 
-
     def Parse(self):
         if not self.InitialChecks():
             return False
         self.ExtractHeaders()
         return True
 
-
     def Show(self):
         print(cIOSMemoryBlockHeader.ShowHeader)
         for oIOSMemoryBlockHeader in self.Headers:
             print(oIOSMemoryBlockHeader.ShowLine())
-
 
     def ResolveNames(self, oIOSCoreDump):
         for address in self.dNames:
@@ -389,7 +371,6 @@ class cIOSProcess:
                      },
               }
 
-
     def __init__(self, processID, data, oIOSCoreDump=None, dProcessStructureStats={}, dHeuristicsFields={}):
         if dHeuristicsFields != {}:
             for key, value in dHeuristicsFields.items():
@@ -397,7 +378,7 @@ class cIOSProcess:
         self.error = ''
         self.processID = processID
         self.data = data
-        self.indexProcessEnd = self.data.find(cCiscoMagic.STR_PROCESS_END, 690, len(data)) #BEEFCAFE can appear early in the process as well, parse for one near end of known range
+        self.indexProcessEnd = self.data.find(cCiscoMagic.STR_PROCESS_END, 690, len(data))  # BEEFCAFE can appear early in the process as well, parse for one near end of known range
         if self.indexProcessEnd < 0:
             self.error = 'Error: parsing process structure, BEEFCAFE not found'
             return
@@ -406,11 +387,11 @@ class cIOSProcess:
             self.error = 'Error: unexpected process structure, length = {:d}'.format(self.indexProcessEnd)
         else:
             self.SetFields()
-            if self.Q == None:
+            if self.Q is None:
                 self.Q_str = '?'
             else:
                 self.Q_str = cIOSProcess.Q2Str(self.Q)
-            if self.Ty == None:
+            if self.Ty is None:
                 self.Ty_str = '?'
             else:
                 self.Ty_str = cIOSProcess.Ty2Str(self.Ty)
@@ -418,61 +399,55 @@ class cIOSProcess:
             while oIOSCoreDump.GetInteger32(addressIter) == 0xFFFFFFFF and addressIter - self.addressStackBlock <= self.Stack2:
                 addressIter += 4
             self.LowWaterMark = addressIter - self.addressStackBlock
-            if self.addressTTY == None:
+            if self.addressTTY is None:
                 self.TTY = None
             elif self.addressTTY == 0:
                 self.TTY = 0
             else:
-                if oIOSCoreDump == None:
+                if oIOSCoreDump is None:
                     self.TTY = None
                 else:
                     self.TTY = oIOSCoreDump.GetInteger32(self.addressTTY+4)
-        if not self.indexProcessEnd in dProcessStructureStats:
+        if self.indexProcessEnd not in dProcessStructureStats:
             dProcessStructureStats[self.indexProcessEnd] = {}
         self.CalcProcessStructureStats(dProcessStructureStats[self.indexProcessEnd])
-        if oIOSCoreDump == None or self.addressProcessName == None:
+        if oIOSCoreDump is None or self.addressProcessName is None:
             self.name = None
         else:
             self.name = oIOSCoreDump.GetString(self.addressProcessName)
 
-
     def IsSupportedProcessStructure(self):
         return self.indexProcessEnd in cIOSProcess.dFields
 
-
     def SetField(self, fieldName):
-        if self.dFields[self.indexProcessEnd][fieldName] == None:
+        if self.dFields[self.indexProcessEnd][fieldName] is None:
             exec('self.{} = None'.format(fieldName))
         else:
             format, position = self.dFields[self.indexProcessEnd][fieldName]
             fieldValue = struct.unpack(format, self.data[position:position + 4])[0]
             exec('self.{} = fieldValue'.format(fieldName))
 
-
     def SetFields(self):
         for fieldName in self.dFields[self.indexProcessEnd]:
             self.SetField(fieldName)
 
-
     @classmethod
     def Q2Str(cls, number):
-        dPriorities = {2:'C', 3:'H', 4:'M', 5:'L'}
-        #dPriorities = {1:'C', 2:'H', 3:'M', 4:'L'} #a# regression test this
+        dPriorities = {2: 'C', 3: 'H', 4: 'M', 5: 'L'}
+        # dPriorities = {1:'C', 2:'H', 3:'M', 4:'L'} #a# regression test this
         if number in dPriorities:
             return dPriorities[number]
         else:
             return str(number)
 
-
     @classmethod
     def Ty2Str(cls, number):
-        #dTys = {0:'*', 4:'we', 6:'si', 7:'sp', 8:'st'}
-        dTys = {0:'*', 1:'E', 2:'S', 3:'rd', 4:'we', 5:'sa', 6:'si', 7:'sp', 8:'st', 9:'hg', 10:'xx'} # untested
+        # dTys = {0:'*', 4:'we', 6:'si', 7:'sp', 8:'st'}
+        dTys = {0: '*', 1: 'E', 2: 'S', 3: 'rd', 4: 'we', 5: 'sa', 6: 'si', 7: 'sp', 8: 'st', 9: 'hg', 10: 'xx'}  # untested
         if number in dTys:
             return dTys[number]
         else:
             return str(number)
-
 
     def CalcProcessStructureStats(self, dStats):
         for index, integer32 in enumerate(struct.unpack('>' + 'I' * int(len(self.data) / 4), self.data)):
@@ -483,40 +458,39 @@ class cIOSProcess:
                 else:
                     bucket[integer32] = 1
             else:
-                dStats[index] = {integer32:1}
-
+                dStats[index] = {integer32: 1}
 
     def Line(self):
         line = '{:4d} {}{:<2} '.format(self.processID, self.Q_str, self.Ty_str)
-        if self.PC == None:
+        if self.PC is None:
             line += '???????? '
         else:
             line += '{:08X} '.format(self.PC)
-        if self.Runtime == None:
+        if self.Runtime is None:
             line += '       ? '
         else:
             line += '    {:8d} '.format(self.Runtime)
-        if self.Invoked == None:
+        if self.Invoked is None:
             line += '       ? '
         else:
             line += '  {:8d} '.format(self.Invoked)
-        if self.Invoked == 0 or self.Invoked == None or self.Runtime == None:
+        if self.Invoked == 0 or self.Invoked is None or self.Runtime is None:
             line += '      ?'
         else:
             line += '{:7d}'.format(int(self.Runtime * 1000 / self.Invoked))
-        if self.LowWaterMark == None:
+        if self.LowWaterMark is None:
             line += '    ?/'
         else:
             line += '{:5d}/'.format(self.LowWaterMark)
-        if self.Stack2 == None:
+        if self.Stack2 is None:
             line += '?     '
         else:
             line += '{:<5d} '.format(self.Stack2)
-        if self.TTY == None:
+        if self.TTY is None:
             line += ' ? '
         else:
             line += '{:>2d} '.format(self.TTY)
-        if self.addressStackBlock == None:
+        if self.addressStackBlock is None:
             line += '       ? '
         else:
             line += '{:08X} '.format(self.addressStackBlock)
@@ -530,11 +504,11 @@ class cIOSCoreDumpAnalysis:
         self.error = None
         self.RanHeuristics = False
         self.oIOSCoreDump = cIOSCoreDump(coredumpFilename)
-        if self.oIOSCoreDump.error != None:
+        if self.oIOSCoreDump.error is not None:
             self.error = self.oIOSCoreDump.error
             return
         addressHeap, memoryHeap = self.oIOSCoreDump.RegionHEAP()
-        if memoryHeap == None:
+        if memoryHeap is None:
             self.error = 'Heap region not found'
             return
         oIOSMemoryParser = cIOSMemoryParser(memoryHeap)
@@ -551,22 +525,22 @@ class cIOSCoreDumpAnalysis:
                     dProcessArray[addressNextProcessArray] = oIOSMemoryBlockHeader
         oIterProcessArray = oLastProcessArray
         addressProcesses = []
-        while oIterProcessArray != None:
-                processArray = oIterProcessArray.GetData()
-                countProcessesInThisArray = struct.unpack('>I', processArray[4:8])[0]
-                addressProcessesInThisArray = []
-                for addressProcess in struct.unpack('>' + 'I' * int(len(processArray[8:]) / 4), processArray[8:]):
-                    if countProcessesInThisArray > 0:
-                        addressProcessesInThisArray.append(addressProcess)
-                        if addressProcess != 0:
-                            countProcessesInThisArray -= 1
-                addressProcessesInThisArray.extend(addressProcesses)
-                addressProcesses = addressProcessesInThisArray
-                addressProcessArray = oIterProcessArray.addressData
-                if addressProcessArray in dProcessArray:
-                    oIterProcessArray = dProcessArray[addressProcessArray]
-                else:
-                    oIterProcessArray = None
+        while oIterProcessArray is not None:
+            processArray = oIterProcessArray.GetData()
+            countProcessesInThisArray = struct.unpack('>I', processArray[4:8])[0]
+            addressProcessesInThisArray = []
+            for addressProcess in struct.unpack('>' + 'I' * int(len(processArray[8:]) / 4), processArray[8:]):
+                if countProcessesInThisArray > 0:
+                    addressProcessesInThisArray.append(addressProcess)
+                    if addressProcess != 0:
+                        countProcessesInThisArray -= 1
+            addressProcessesInThisArray.extend(addressProcesses)
+            addressProcesses = addressProcessesInThisArray
+            addressProcessArray = oIterProcessArray.addressData
+            if addressProcessArray in dProcessArray:
+                oIterProcessArray = dProcessArray[addressProcessArray]
+            else:
+                oIterProcessArray = None
         self.processes = []
         self.dProcessStructureStats = {}
         countProcessStructureErrors = 0
@@ -589,11 +563,10 @@ class cIOSCoreDumpAnalysis:
                                                   oIOSMemoryParser.dHeadersAddressData[addressProcess].GetData(),
                                                   self.oIOSCoreDump,
                                                   self.dProcessStructureStats,
-                                                  {self.HeuristicsSize:self.HeuristicsFields})
+                                                  {self.HeuristicsSize: self.HeuristicsFields})
                         self.processes.append((index + 1, addressProcess, oIOSProcess))
                     else:
                         self.processes.append((index + 1, addressProcess, None))
-
 
     def HeuristicsStructureAnalysis(self):
         dStats = self.dProcessStructureStats[self.HeuristicsSize]
@@ -608,7 +581,7 @@ class cIOSCoreDumpAnalysis:
             unfilteredMax = max(dStats[key1])
             regionNames = []
             for region in self.oIOSCoreDump.regions:
-                if region[2] != None:
+                if region[2] is not None:
                     if filteredMin >= region[1] and filteredMin <= region[1] + region[2] - 1:
                         if not region[0] in regionNames:
                             regionNames.append(region[0])
@@ -617,7 +590,6 @@ class cIOSCoreDumpAnalysis:
                             regionNames.append(region[0])
             regionNames.sort()
             self.dHeuristicsAnalysis[key1] = (countKeys, min(dStats[key1]), filteredMin, unfilteredMax, regionNames, dStats[key1])
-
 #        keys1 = self.dHeuristicsAnalysis.keys()
 #        keys1.sort()
 #        for key1 in keys1:
@@ -637,21 +609,19 @@ class cIOSCoreDumpAnalysis:
             if 'data' in self.dHeuristicsAnalysis[key1][4] and self.dHeuristicsAnalysis[key1][1] != 0 and key1 > 1 and self.dHeuristicsAnalysis[key1][0] > countMax:
                 countMax = self.dHeuristicsAnalysis[key1][0]
                 keyMax = key1
-        if keyMax != None:
+        if keyMax is not None:
             self.HeuristicsFields['addressProcessName'] = ('>I', keyMax*4)
-
 
     def HeuristicsFindQ(self):
         keyFound = None
         for key1 in self.dHeuristicsAnalysis:
             if self.dHeuristicsAnalysis[key1][0] > 1 and self.dHeuristicsAnalysis[key1][1] >= 2 and self.dHeuristicsAnalysis[key1][3] <= 5:
-                if keyFound == None:
+                if keyFound is None:
                     keyFound = key1
                 else:
                     return
-        if keyFound != None:
+        if keyFound is not None:
             self.HeuristicsFields['Q'] = ('>I', keyFound*4)
-
 
     def HeuristicsFindTy(self):
         keyFound = None
@@ -661,13 +631,12 @@ class cIOSCoreDumpAnalysis:
                     self.dHeuristicsAnalysis[key1][5][0] <= 2 and
                     self.dHeuristicsAnalysis[key1][3] >= 4 and
                     self.dHeuristicsAnalysis[key1][3] <= 10):
-                if keyFound == None:
+                if keyFound is None:
                     keyFound = key1
                 else:
                     return
-        if keyFound != None:
+        if keyFound is not None:
             self.HeuristicsFields['Ty'] = ('>I', keyFound*4)
-
 
     def HeuristicsAddMissingFields(self):
         dFields = {
@@ -683,9 +652,8 @@ class cIOSCoreDumpAnalysis:
                     'addressTTY':         None,
                   }
         for field in dFields:
-            if not field in self.HeuristicsFields:
+            if field not in self.HeuristicsFields:
                 self.HeuristicsFields[field] = dFields[field]
-
 
     def Heuristics(self):
         self.RanHeuristics = True

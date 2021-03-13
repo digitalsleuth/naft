@@ -14,7 +14,7 @@ import naft.modules.pfef as pfef
 
 def ExtractIPPacketsFromFile(filenamesRawData, filenamePCAP, arguments):
     uf.LogLine('Start')
-    if arguments['ouitxt'] == None:
+    if arguments['ouitxt'] is None:
         oFrames = pfef.cFrames()
     else:
         oFrames = pfef.cFrames(arguments['ouitxt'])
@@ -22,13 +22,28 @@ def ExtractIPPacketsFromFile(filenamesRawData, filenamePCAP, arguments):
     for filenameRawData in filenamesRawData:
         if arguments['buffer']:
             uf.LogLine('Buffering file {}'.format(filenameRawData))
-            oBufferFile = uf.cBufferFile(filenameRawData, arguments['buffersize'] * 1024 * 1024, arguments['bufferoverlapsize'] * 1024 * 1024)
+            oBufferFile = uf.cBufferFile(filenameRawData,
+                                         arguments['buffersize'] * 1024 * 1024,
+                                         arguments['bufferoverlapsize'] * 1024 * 1024)
             while oBufferFile.Read():
-                uf.LogLine('Processing buffer 0x{:x} size {:.2f} MB {:d}%'.format(oBufferFile.index, len(oBufferFile.buffer) / 1024 / 1024, oBufferFile.Progress()))
+                uf.LogLine('Processing buffer 0x{:x} size {:.2f} MB {:d}%'.format(oBufferFile.index,
+                                                                                  len(oBufferFile.buffer)/1024/1024,
+                                                                                  oBufferFile.Progress()))
                 uf.LogLine('Searching for IPv4 packets')
-                pfef.ExtractIPPackets(oFrames, oBufferFile.index, oBufferFile.buffer, arguments['options'], arguments['duplicates'], True, filenameRawData)
+                pfef.ExtractIPPackets(oFrames,
+                                      oBufferFile.index,
+                                      oBufferFile.buffer,
+                                      arguments['options'],
+                                      arguments['duplicates'],
+                                      True,
+                                      filenameRawData)
                 uf.LogLine('Searching for ARP Ethernet frames')
-                pfef.ExtractARPFrames(oFrames, oBufferFile.index, oBufferFile.buffer, arguments['duplicates'], True, filenameRawData)
+                pfef.ExtractARPFrames(oFrames,
+                                      oBufferFile.index,
+                                      oBufferFile.buffer,
+                                      arguments['duplicates'],
+                                      True,
+                                      filenameRawData)
             if oBufferFile.error == MemoryError:
                 uf.LogLine('Data is too large to fit in memory, use smaller buffer')
             elif oBufferFile.error:
@@ -37,13 +52,19 @@ def ExtractIPPacketsFromFile(filenamesRawData, filenamePCAP, arguments):
         else:
             uf.LogLine('Reading file {}'.format(filenameRawData))
             rawData = uf.File2Data(filenameRawData)
-            if rawData == None:
+            if rawData is None:
                 uf.LogLine('Error reading file')
             if rawData == MemoryError:
                 uf.LogLine('File is too large to fit in memory')
             else:
                 uf.LogLine('Searching for IPv4 packets')
-                pfef.ExtractIPPackets(oFrames, 0, rawData, arguments['options'], arguments['duplicates'], True, filenameRawData)
+                pfef.ExtractIPPackets(oFrames,
+                                      0,
+                                      rawData,
+                                      arguments['options'],
+                                      arguments['duplicates'],
+                                      True,
+                                      filenameRawData)
                 uf.LogLine('Searching for ARP Ethernet frames')
                 pfef.ExtractARPFrames(oFrames, 0, rawData, arguments['duplicates'], True, filenameRawData)
                 countProcessedFiles += 1
@@ -61,12 +82,12 @@ def IOSFrames(coredumpFilename, filenameIOMEM, filenamePCAP, arguments):
     uf.LogLine('Start')
     uf.LogLine('Reading file {}'.format(coredumpFilename))
     oIOSCoreDump = impf.cIOSCoreDump(coredumpFilename)
-    if oIOSCoreDump.error != None:
+    if oIOSCoreDump.error is not None:
         print(oIOSCoreDump.error)
         return
     uf.LogLine('Searching for heap region')
     addressHeap, memoryHeap = oIOSCoreDump.RegionHEAP()
-    if memoryHeap == None:
+    if memoryHeap is None:
         print('Heap region not found')
         return
     oIOSMemoryParserHeap = impf.cIOSMemoryParser(memoryHeap)
@@ -76,7 +97,7 @@ def IOSFrames(coredumpFilename, filenameIOMEM, filenamePCAP, arguments):
     uf.LogLine('Searching for base address from {}'.format(filenameIOMEM))
     oIOSMemoryParserIOMEM = impf.cIOSMemoryParser(dataIOMEM)
     addressIOMEM = oIOSMemoryParserIOMEM.baseAddress
-    if addressIOMEM == None:
+    if addressIOMEM is None:
         print('Error parsing IOMEM')
         return
     oFrames = pfef.cFrames()
@@ -91,8 +112,8 @@ def IOSFrames(coredumpFilename, filenameIOMEM, filenamePCAP, arguments):
             if frameAddress != 0 and frameSize != 0:
                 if arguments['verbose']:
                     print(oIOSMemoryBlockHeader.ShowLine())
-                    uf.DumpBytes(dataIOMEM[frameAddress - addressIOMEM : frameAddress - addressIOMEM + frameSize], frameAddress)
-                oFrames.AddFrame(frameAddress - addressIOMEM, dataIOMEM[frameAddress - addressIOMEM : frameAddress - addressIOMEM + frameSize], True)
+                    uf.DumpBytes(dataIOMEM[frameAddress - addressIOMEM:frameAddress - addressIOMEM + frameSize], frameAddress)
+                oFrames.AddFrame(frameAddress - addressIOMEM, dataIOMEM[frameAddress - addressIOMEM:frameAddress - addressIOMEM + frameSize], True)
     oFrames.WritePCAP(filenamePCAP)
     uf.LogLine('{:d} frames written to {}'.format(oFrames.countFrames, filenamePCAP))
     uf.LogLine('Done')

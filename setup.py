@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
+"""
+NAFT is a Python3 update and rebuild of the original
+Didier Stevens naft toolset.
+"""
 from setuptools import setup, find_packages
 
 with open("README.md", encoding='utf8') as readme:
