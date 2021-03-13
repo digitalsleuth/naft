@@ -77,10 +77,10 @@ def main():
     frames.add_argument('--iomem', help='iomem dump file', metavar='FILE')
     frames.add_argument('-v', '--verbose', action='store_true', default=False, help='Increase output verbosity')
     packets = network_parser.add_argument_group('Packets options')
-    packets.add_argument('--files', nargs='+', metavar='FILE', help='List of files to extract packets from, use --files <file1> <file2>')
+    packets.add_argument('--files', nargs='+', help='List of files to extract packets from, use --files <file1> <file2>', metavar='FILE')
     packets.add_argument('-d', '--duplicates', action='store_true', default=False, help='Include duplicates')
     packets.add_argument('-p', '--options', action='store_true', default=False, help='Search for IPv4 headers with options')
-    packets.add_argument('-t', '--ouitxt', help='File containing OUI\'s to filter for MAC addresses')
+    packets.add_argument('-t', '--ouitxt', help='File containing OUI\'s to filter for MAC addresses', metavar='FILE')
     packets.add_argument('-b', '--buffer', action='store_true', default=False, help='Buffer the file in 100MB blocks with 1MB overlap')
     packets.add_argument('-B', '--buffersize', type=int, default=100, help='Explicitly set size of buffer in MB (default 100MB)')
     packets.add_argument('-O', '--bufferoverlapsize', type=int, default=1, help='Explicitly set size of buffer overlap in MB (default 1MB)')
@@ -89,12 +89,12 @@ def main():
     image_parser = subparsers.add_parser('image', help='IOS Image Analysis')
     image = image_parser.add_argument_group('functions')
     image_group = image.add_mutually_exclusive_group(required=True)
-    image_group.add_argument('-e', '--extract', help='Extract the compressed image to path: [-m] [-v]', metavar='PATH')
-    image_group.add_argument('-i', '--ida', help='Extract the compressed image to path and patch it for IDA Pro: [-m] [-v]', metavar='PATH')
-    image_group.add_argument('-s', '--scan', action='store_true', help='Find and scan all images within DIR: [-R] [-r] [-m] [-l]')
-    image_group.add_argument('-I', '--info', action='store_true', default=False, help='Scan defined image and output metadata')
+    image_group.add_argument('-I', '--info', help='Scan defined image and output metadata, requires --bin', metavar='FILE')
+    image_group.add_argument('-e', '--extract', help='Extract the compressed image to path, requires --bin: [-m] [-v]', metavar='PATH')
+    image_group.add_argument('-i', '--ida', help='Extract the compressed image to path and patch it for IDA Pro, requires --bin: [-m] [-v]', metavar='PATH')
+    image_group.add_argument('-s', '--scan', help='Find and scan all images within PATH: [-R] [-r] [-m] [-l]', metavar='PATH')
+    image_parser.add_argument('-b', '--bin', help='IOS bin file', metavar='FILE')
     image_parser.add_argument('-m', '--md5db', help='Compare MD5 hash with provided CSV formatted db', metavar='CSV')
-    image_parser.add_argument('bin', help='IOS bin file, use wildcard for --scan')
     image_parser.add_argument('-R', '--recurse', action='store_true', default=False, help='Recursively search sub-directories for images')
     image_parser.add_argument('-r', '--resume', help='Resume an interrupted scan from Pickle file', metavar='PKL')
     image_parser.add_argument('-l', '--log', help='Write scan result to log file', metavar='FILE')
@@ -142,9 +142,12 @@ def main():
                 gfe.ExtractIPPacketsFromFile(args.files, args.packets, all_args)
     if sys.argv[1] == 'image':
         if args.extract or args.ida or args.info:
-            ii.CiscoIOSImageFileParser(args.bin, all_args)
+            if not args.bin:
+                missing_req('bin')
+            else:
+                ii.CiscoIOSImageFileParser(args.bin, all_args)
         if args.scan:
-            ii.CiscoIOSImageFileScanner(args.bin, all_args)
+            ii.CiscoIOSImageFileScanner(args.scan, all_args)
 
 
 if __name__ == '__main__':
