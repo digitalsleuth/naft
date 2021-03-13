@@ -31,14 +31,15 @@ def missing_req(requirement):
     print(req_error[requirement])
     return
 
+
 def main():
     main_parser = argparse.ArgumentParser(
         description=__description__ + ' ' + str(__version__),
         usage='naft [category] [function] [optional/required arguments]',
         epilog="Use -h on each category to view all available options."
     )
-
     subparsers = main_parser.add_subparsers(title='categories', metavar='Select one of the three following categories to begin analysis', prog='naft')
+
 
     core_parser = subparsers.add_parser('core', help='Core Dump')
     core = core_parser.add_argument_group('functions')
@@ -76,10 +77,10 @@ def main():
     frames.add_argument('--iomem', help='iomem dump file', metavar='FILE')
     frames.add_argument('-v', '--verbose', action='store_true', default=False, help='Increase output verbosity')
     packets = network_parser.add_argument_group('Packets options')
-    packets.add_argument('--files', nargs='+', metavar='FILE', help='List of files to extract packets from, use --files <file1> <file2>')
+    packets.add_argument('--files', nargs='+', help='List of files to extract packets from, use --files <file1> <file2>', metavar='FILE')
     packets.add_argument('-d', '--duplicates', action='store_true', default=False, help='Include duplicates')
     packets.add_argument('-p', '--options', action='store_true', default=False, help='Search for IPv4 headers with options')
-    packets.add_argument('-t', '--ouitxt', help='File containing OUI\'s to filter for MAC addresses')
+    packets.add_argument('-t', '--ouitxt', help='File containing OUI\'s to filter for MAC addresses', metavar='FILE')
     packets.add_argument('-b', '--buffer', action='store_true', default=False, help='Buffer the file in 100MB blocks with 1MB overlap')
     packets.add_argument('-B', '--buffersize', type=int, default=100, help='Explicitly set size of buffer in MB (default 100MB)')
     packets.add_argument('-O', '--bufferoverlapsize', type=int, default=1, help='Explicitly set size of buffer overlap in MB (default 1MB)')
@@ -88,11 +89,11 @@ def main():
     image_parser = subparsers.add_parser('image', help='IOS Image Analysis')
     image = image_parser.add_argument_group('functions')
     image_group = image.add_mutually_exclusive_group(required=True)
-    image_group.add_argument('--info', action='store_true', default=False, help='Scan defined image and output metadata, requires --bin')
-    image_group.add_argument('--extract', help='Extract the compressed image to path, requires --bin: [-m] [-v]', metavar='PATH')
-    image_group.add_argument('--ida', help='Extract the compressed image to path and patch it for IDA Pro, requires --bin: [-m] [-v]', metavar='PATH')
-    image_group.add_argument('--scan', metavar='DIR', help='Find and scan all images within DIR: [-R] [-r] [-m] [-l]')
-    image_parser.add_argument('--bin', help='IOS bin file', metavar='FILE')
+    image_group.add_argument('-I', '--info', help='Scan defined image and output metadata, requires --bin', metavar='FILE')
+    image_group.add_argument('-e', '--extract', help='Extract the compressed image to path, requires --bin: [-m] [-v]', metavar='PATH')
+    image_group.add_argument('-i', '--ida', help='Extract the compressed image to path and patch it for IDA Pro, requires --bin: [-m] [-v]', metavar='PATH')
+    image_group.add_argument('-s', '--scan', help='Find and scan all images within PATH: [-R] [-r] [-m] [-l]', metavar='PATH')
+    image_parser.add_argument('-b', '--bin', help='IOS bin file', metavar='FILE')
     image_parser.add_argument('-m', '--md5db', help='Compare MD5 hash with provided CSV formatted db', metavar='CSV')
     image_parser.add_argument('-R', '--recurse', action='store_true', default=False, help='Recursively search sub-directories for images')
     image_parser.add_argument('-r', '--resume', help='Resume an interrupted scan from Pickle file', metavar='PKL')
@@ -105,7 +106,6 @@ def main():
     if len(all_args) == 0:
         main_parser.print_help()
         main_parser.exit()
-
     if sys.argv[1] == 'core':
         if args.regions:
             icd.IOSRegions(args.coredump, all_args)
@@ -129,7 +129,6 @@ def main():
                 icd.IOSCheckText(args.coredump, args.bin, all_args)
         elif args.integrity:
             icd.IOSIntegrityText(args.coredump, all_args)
-
     if sys.argv[1] == 'network':
         if args.frames:
             if not args.coredump or not args.iomem:
@@ -141,7 +140,6 @@ def main():
                 missing_req('files')
             else:
                 gfe.ExtractIPPacketsFromFile(args.files, args.packets, all_args)
-
     if sys.argv[1] == 'image':
         if args.extract or args.ida or args.info:
             if not args.bin:
@@ -150,6 +148,7 @@ def main():
                 ii.CiscoIOSImageFileParser(args.bin, all_args)
         if args.scan:
             ii.CiscoIOSImageFileScanner(args.scan, all_args)
+
 
 if __name__ == '__main__':
     main()

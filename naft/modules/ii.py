@@ -22,15 +22,12 @@ import naft.modules.impf as impf
 
 def CiscoIOSImageFileParser(filename, arguments):
     global oMD5Database
-
     image = uf.File2Data(filename)
     if image == None:
         print('Error reading {}'.format(filename))
         return
-
     oIOSImage = uf.InProgress(iipf.cIOSImage, image)
     oIOSImage.Print()
-
     if arguments['md5db']:
         if arguments['md5db'] != None:
             oMD5Database = cMD5Database(arguments['md5db'])
@@ -40,7 +37,6 @@ def CiscoIOSImageFileParser(filename, arguments):
             print('File not found in md5 database')
         else:
             print('File found in md5 database {} {}'.format(filenameCSV, filenameDB))
-
     if arguments['verbose']:
         print('\nELF Headers:\n')
         print(f"index {'index_str': >10} {'type': >10} {'flags': >10} {'offset': >10} {'size': >10} {'data': >10}")
@@ -54,16 +50,15 @@ def CiscoIOSImageFileParser(filename, arguments):
                 oSectionHeader.size,
                 repr(oSectionHeader.sectionData[0:8]))
             )
-
     if arguments['extract']:
         print("\n{} written to: {}".format(oIOSImage.imageUncompressedName, arguments['extract']))
         uf.Data2File(oIOSImage.imageUncompressed, oIOSImage.imageUncompressedName, arguments['extract'])
-
     if arguments['ida']:
         print("\nPatching for IDA Pro...")
         time.sleep(0.5)
         print("{} written to: {}".format(oIOSImage.imageUncompressedName, arguments['ida']))
         uf.Data2File(oIOSImage.ImageUncompressedIDAPro(), oIOSImage.imageUncompressedName, arguments['ida'])
+
 
 def Entropy(data):
     result = 0.0
@@ -78,22 +73,6 @@ def Entropy(data):
                 result -= percentage*math.log(percentage, 2)
     return result
 
-#def GlobRecurse(filewildcard):
-#    filenames = []
-#    directory = os.path.dirname(filewildcard)
-#    if directory == '':
-#        directory = '.'
-#    for entry in os.listdir(directory):
-#        if os.path.isdir(os.path.join(directory, entry)):
-#            filenames.extend(GlobRecurse(os.path.join(directory, entry, os.path.basename(filewildcard))))
-#    filenames.extend(glob.glob(filewildcard))
-#    return filenames
-
-#def GlobFilelist(filewildcard, arguments):
-#    if arguments['recurse']:
-#        return GlobRecurse(filewildcard)
-#    else:
-#        return glob.glob(filewildcard)
 
 def TargetDir(dir, arguments):
     bins = []
@@ -109,17 +88,20 @@ def TargetDir(dir, arguments):
                     bins.append(child)
     return tdir, bins
 
+
 def vn(dictionary, key):
     if key in dictionary:
         return dictionary[key]
     else:
         return None
 
+
 def PickleData(data):
     fPickle = open('resume.pkl', 'wb')
     pickle.dump(data, fPickle)
     fPickle.close()
     print('Pickle file saved')
+
 
 def CiscoIOSImageFileScanner(dir, arguments):
     if not arguments['resume']:
@@ -131,7 +113,7 @@ def CiscoIOSImageFileScanner(dir, arguments):
         if arguments['recurse']:
             print('Recursive search')
         countFilenames = len(filenames)
-        print(f"\nPerforming scan on {countFilenames} file(s):\n")
+        print("Performing scan on {:d} file(s):\n".format(countFilenames))
         counter = 1
         if arguments['log'] != None:
             f = open(arguments['log'], 'w')
@@ -141,7 +123,6 @@ def CiscoIOSImageFileScanner(dir, arguments):
         filenames, countFilenames, counter = pickle.load(fPickle)
         fPickle.close()
         print('Pickle file loaded')
-
     scan_header = [
         'counter',
         'countFilenames',
@@ -174,7 +155,8 @@ def CiscoIOSImageFileScanner(dir, arguments):
             else:
                 oIOSImage = uf.InProgress(iipf.cIOSImage, image)
                 if oIOSImage.oCWStrings != None and oIOSImage.oCWStrings.error == None:
-                    line.extend([(uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, b'CW_VERSION'))).decode(), (uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, b'CW_FAMILY'))).decode()])
+                    line.extend([(uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, b'CW_VERSION'))).decode(),
+                                 (uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, b'CW_FAMILY'))).decode()])
                 else:
                     line.extend([uf.cn(None), uf.cn(None)])
                 line.extend([
@@ -213,5 +195,5 @@ def CiscoIOSImageFileScanner(dir, arguments):
             traceback.print_exc()
             PickleData([filenames, countFilenames, counter])
             return
-    print("")
-    print(f"{counter-1} file(s) scanned.")
+    print('')
+    print('{:d} file(s) scanned.'.format(counter-1))

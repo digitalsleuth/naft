@@ -15,6 +15,7 @@ import hashlib
 import naft.modules.uf as uf
 import naft.modules.impf as impf
 
+
 class cELFSection:
 
     def __init__(self, data, dataELF):
@@ -31,6 +32,7 @@ class cELFSection:
         else:
             self.sectionData = ''
 
+
     def GetHeader(self, offset=None, size=None):
         result = self.data[0:16]
         if offset == None:
@@ -44,6 +46,7 @@ class cELFSection:
         result += self.data[24:40]
         return result
 
+
 class cELF:
 
     def __init__(self, data):
@@ -51,6 +54,7 @@ class cELF:
         self.countSections = 0
         self.stringTableIndex = None
         self.Parse()
+
 
     def ParseELFHeader(self):
         if len(self.data) < 52:
@@ -84,12 +88,14 @@ class cELF:
         self.countSections = header[8]
         self.stringTableIndex = header[9]
 
+
     def GetNullTerminatedString(self, index):
         result = ''
         while self.data[index] != 0:
             result += chr(self.data[index])
             index += 1
         return result
+
 
     def ParseSectionHeaders(self):
         if len(self.data) < self.sectionOffset + self.countSections * 40:
@@ -107,17 +113,21 @@ class cELF:
             for oELFSection in self.sections:
                 oELFSection.nameIndexString = self.GetNullTerminatedString(self.sections[self.stringTableIndex].offset + oELFSection.nameIndex)
 
+
     def Parse(self):
         self.error = 0
         self.ParseELFHeader()
         if self.error == 0:
             self.ParseSectionHeaders()
 
+
     def GetHeader(self):
         return self.data[0:52]
 
+
     def GetProgramHeader(self, length):
         return self.data[self.programOffset:self.programOffset + 16] + struct.pack('>I', length) + struct.pack('>I', length + 0x10000) + self.data[self.programOffset + 24:self.programOffset + 32]
+
 
 class cIOSImage:
 
@@ -135,6 +145,7 @@ class cIOSImage:
         self.oCWStrings = None
         self.Parse()
 
+
     @classmethod
     def CalcChecksum(cls, data):
         sum = 0
@@ -151,6 +162,7 @@ class cIOSImage:
 #                    print('Warning: checksum data remainder not zero (%d)' % ord(x))
         return sum
 
+
     def ExtractEmbeddedMD5(self, data):
         index = data.find(impf.cCiscoMagic.STR_FADEFAD1)
         if index < 0:
@@ -158,6 +170,7 @@ class cIOSImage:
         if index + len(impf.cCiscoMagic.STR_FADEFAD1) + 16 > len(data):
             return None
         return(''.join(['%02x' % ord(x) for x in data[index + len(impf.cCiscoMagic.STR_FADEFAD1):index + len(impf.cCiscoMagic.STR_FADEFAD1) + 16]]))
+
 
     def ExtractSections(self, oELF):
         oSectionHeaderCompressedImage = None
@@ -184,6 +197,7 @@ class cIOSImage:
                     oSectionHeaderCWStrings = oSectionHeader
         return (oSectionHeaderCompressedImage, oSectionHeaderEmbeddedMD5, oSectionHeaderCWStrings)
 
+
     def Parse(self):
         self.error = 0
         self.oELF = cELF(self.data)
@@ -200,7 +214,6 @@ class cIOSImage:
             self.embeddedMD5 = self.ExtractEmbeddedMD5(self.oSectionHeaderEmbeddedMD5.sectionData)
         if self.oSectionHeaderCWStrings != None:
             self.oCWStrings = impf.cCiscoCWStrings(self.oSectionHeaderCWStrings.sectionData)
-
         md5 = hashlib.md5()
         index = 0
         for oSectionHeader in self.oELF.sections:
@@ -208,7 +221,6 @@ class cIOSImage:
                 md5.update(oSectionHeader.sectionData)
             index += 1
         self.calculatedMD5 = md5.hexdigest()
-
         if self.oSectionHeaderCompressedImage == None:
             print('MAGIC number FEEDFACE not found')
             self.error = 4
@@ -247,13 +259,13 @@ class cIOSImage:
                 if self.imageUncompressed != None:
                     self.calculatedChecksumUncompressed = cIOSImage.CalcChecksum(self.imageUncompressed)
 
+
     def Print(self):
         print('IOS Image Metadata:\n')
         if self.oCWStrings != None and self.oCWStrings.error == None:
             for key in [b'CW_VERSION', b'CW_FAMILY', b'CW_FEATURE', b'CW_IMAGE', b'CW_SYSDESCR']:
                 if key in self.oCWStrings.dCWStrings:
                     print('{}:{}{}'.format(key.decode('utf-8'), ' ' * (22 - len(key)), self.oCWStrings.dCWStrings[key].decode('utf-8')))
-
         booleanValue = {True: 'identical', False: 'DIFFERENT'}
         if self.oELF.error == 0:
             print('Entry point:           0x{:08X}'.format(self.oELF.addressEntry))
@@ -268,6 +280,7 @@ class cIOSImage:
             print('Checksum uncompressed: 0x{:08X}'.format(uf.cn(self.checksumUncompressed)))
             print('Calculated checksum:   0x{:08X} ({})'.format(uf.cn(self.calculatedChecksumUncompressed), booleanValue[self.checksumUncompressed == self.calculatedChecksumUncompressed]))
 
+
     def Compress(self, filenameUncompressedImage, imageUncompressed):
         oStringIO = BytesIO()
         oZipFile = zipfile.ZipFile(oStringIO, 'w')
@@ -277,8 +290,13 @@ class cIOSImage:
         oZipFile.close()
         result = oStringIO.getvalue()
         oStringIO.close()
-        result = impf.cCiscoMagic.STR_FEEDFACE + struct.pack('>IIII', len(imageUncompressed), len(result), cIOSImage.CalcChecksum(result), cIOSImage.CalcChecksum(imageUncompressed)) + result
+        result = impf.cCiscoMagic.STR_FEEDFACE + struct.pack('>IIII',
+                                                            len(imageUncompressed),
+                                                            len(result),
+                                                            cIOSImage.CalcChecksum(result),
+                                                            cIOSImage.CalcChecksum(imageUncompressed)) + result
         return result
+
 
     def Pack(self, filenameUncompressedImage, imageUncompressed):
         if self.oELF.countSections == 6:
@@ -317,9 +335,11 @@ class cIOSImage:
         else:
             return None
 
+
     def ImageUncompressedIDAPro(self):
         newImage = self.imageUncompressed[0:18] + '\x00\x14'.encode() + self.imageUncompressed[20:] # Set machine to PowerPC 0x14
         return newImage
+
 
 class cMD5Database():
 
@@ -332,6 +352,7 @@ class cMD5Database():
             countDoubles += result[0]
             countMD5EmptyString += result[1]
         print('{} unique entries in md5 database, %d doubles of which {} empty string'.format(len(self.dMD5Database), countDoubles, countMD5EmptyString))
+
 
     def AddCSV(self, filenameCSV):
         countDoubles = 0
@@ -349,9 +370,9 @@ class cMD5Database():
                 self.dMD5Database[md5hash] = (basename, filename.strip(' '))
         return (countDoubles, countMD5EmptyString)
 
+
     def Find(self, md5hash):
         if md5hash in self.dMD5Database:
             return self.dMD5Database[md5hash]
         else:
             return None, None
-

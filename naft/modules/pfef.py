@@ -10,7 +10,9 @@ import struct
 import hashlib
 import re
 
+
 class cFrames():
+
     def __init__(self, ouiFilename=None):
         self.frames = []
         self.countFrames = 0
@@ -18,6 +20,7 @@ class cFrames():
         self.dHashes = {}
         self.ParseOUITXT(ouiFilename)
         self.dFilenameIndexLength = {}
+
 
     def AddFramePrivate(self, index, data, duplicates, filename=''):
         filenameIndexLength = '{}-{:d}-{:d}'.format(filename, index, len(data))
@@ -32,22 +35,24 @@ class cFrames():
             self.frames.append((index, data))
         return True
 
+
     def AddFrame(self, index, data, duplicates, filename=''):
         if self.dOUI == {} or data[0:3].hex() in self.dOUI or data[6:9].hex() in self.dOUI:
             if self.AddFramePrivate(index, data, duplicates, filename):
                 self.countFrames += 1
 
+
     def AddIPPacket(self, index, data, duplicates, filename=''):
         if self.AddFramePrivate(index, b'\x00\x00\x00\x00\x00\x00' + b'\x00\x00\x00\x00\x00\x00' + b'\x08\x00' + data, duplicates, filename):
             self.countPackets += 1
+
 
     def WritePCAP(self, filename):
         try:
             f = open(filename, 'wb')
         except:
             return False
-
-        # Gloval header
+        # Global header
         f.write(b'\xD4\xC3\xB2\xA1') # magic number
         f.write(b'\x02\x00')         # major version number
         f.write(b'\x04\x00')         # minor version number
@@ -55,20 +60,17 @@ class cFrames():
         f.write(b'\x00\x00\x00\x00') # accuracy of timestamps
         f.write(b'\xFF\xFF\x00\x00') # max length of captured packets, in octets
         f.write(b'\x01\x00\x00\x00') # data link type
-
         for frame in sorted(self.frames, key=lambda x: x[0]):
-            # Packet Header 
+            # Packet Header
             f.write(struct.pack('<I', int(frame[0] / 1000000)))         # timestamp seconds; set to address
             f.write(struct.pack('<I', int(frame[0] % 1000000)))         # timestamp microseconds; set to address
             f.write(struct.pack('<I', min(len(frame[1]), 0xFFFF))) # number of octets of packet saved in file; limit to 0xFFFF for WireShark
             f.write(struct.pack('<I', min(len(frame[1]), 0xFFFF))) # actual length of packet; limit to 0xFFFF for WireShark
-
             # Packet Data
             f.write(frame[1][0:0xFFFF])
-
         f.close()
-
         return True
+
 
     def ParseOUITXT(self, ouiFilename):
         self.dOUI = {}
@@ -84,16 +86,19 @@ class cFrames():
                     self.dOUI[oMatch.group(1)] = line.strip('\n')
             fOUI.close()
 
+
 #http://stackoverflow.com/questions/3949726/calculate-ip-checksum-in-python
 def CarryAroundAdd(a, b):
     c = a + b
     return (c & 0xffff) + (c >> 16)
+
 
 def CalculateIPChecksum(data):
     s = 0
     for i in range(0, len(data), 2):
         s = CarryAroundAdd(s, data[i] + ((data[i+1]) << 8))
     return ~s & 0xffff
+
 
 # search for bytes between 0x45 and 0x4F (depending flag options) and check if they are the start of an IPv4 header by calculating and comparing the checksum
 def ExtractIPPackets(oFrames, baseAddress, data, options, duplicates, multiple, filename=''):
@@ -129,6 +134,7 @@ def ExtractIPPackets(oFrames, baseAddress, data, options, duplicates, multiple, 
             if found and not multiple:
                 return found
     return found
+
 
 # search for ARP frames for Ethernet, they start with \x08\x06\x00\x01\x08\x00\x06\x04
 def ExtractARPFrames(oFrames, baseAddress, data, duplicates, multiple, filename=''):
