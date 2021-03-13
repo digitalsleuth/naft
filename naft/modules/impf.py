@@ -10,6 +10,7 @@ import struct
 import re
 import naft.modules.uf as uf
 
+
 class cCiscoMagic:
     STR_REGIONS      = b'\xDE\xAD\x12\x34'
     INT_BLOCK_BEGIN  = 0xAB1234CD
@@ -26,10 +27,13 @@ class cCiscoMagic:
     STR_CW_BEGIN     = STR_CW_ + b'BEGIN' + STR_CW_DELIMITER
     STR_CW_END       = STR_CW_ + b'END' + STR_CW_DELIMITER
 
+
 class cIOSCoreDump:
+
     def __init__(self, coredumpFilename):
         self.coredumpFilename = coredumpFilename
         self.Parse()
+
 
     def Parse(self):
         self.error = None
@@ -67,6 +71,7 @@ class cIOSCoreDump:
             regionsCalculation[value] = (regionsCalculation[value][0], regionsCalculation[value][1], length, regionsCalculation[value][1] - addressBegin)
         self.regions = regionsCalculation[:-1]
 
+
     def Region(self, name):
         for region in self.regions:
             if region[0].lower() == name.lower():
@@ -76,17 +81,22 @@ class cIOSCoreDump:
                     return region[1], self.coredump[region[3]:region[3] + region[2]]
         return None, None
 
+
     def RegionTEXT(self):
         return self.Region('text')
+
 
     def RegionDATA(self):
         return self.Region('data')
 
+
     def RegionBSS(self):
         return self.Region('bss')
 
+
     def RegionHEAP(self):
         return self.Region('heap')
+
 
     def GetString(self, address):
         index = address - self.address
@@ -99,11 +109,13 @@ class cIOSCoreDump:
             iter += 1
         return string
 
+
     def GetInteger32(self, address):
         index = address - self.address
         if index < 0 or index -4 >= self.size:
             return None
         return struct.unpack('>I', self.coredump[index:index + 4])[0]
+
 
 class cIOSMemoryBlockHeader:
 
@@ -157,10 +169,12 @@ class cIOSMemoryBlockHeader:
             self.error = 4
             return
 
+
     def ParseSizeField(self, value):
         free = value & 0x80000000 == 0x00000000
         size = (value & 0x7FFFFFFF) * 2
         return free, size
+
 
     def GetData(self):
         start = self.index + self.headerSize
@@ -169,8 +183,10 @@ class cIOSMemoryBlockHeader:
         else:
             return self.oIOSMemoryParser.memory[start:start + self.BlockSize]
 
+
     def GetRawData(self):
         return self.oIOSMemoryParser.memory[self.index:self.index + self.headerSize + self.BlockSize]
+
 
     def ShowLine(self):
         if self.AllocNameResolved == '' or self.AllocNameResolved == None:
@@ -186,8 +202,8 @@ class cIOSMemoryBlockHeader:
         else:
             PrevFree = '{:->8s}'.format('{:X}'.format(self.PrevFree))
         return '{:08X} {:010d} {:08X} {:08X} {:03d} {} {} {:08X} {}'.format(self.address, self.BlockSize, self.PrevBlock, self.NextBlock, self.RefCnt, PrevFree, NextFree, self.AllocPC, allocName)
-
     ShowHeader = 'Address\t Bytes\t    PrevBlk  NextBlk  Ref PrevFree NextFree AllocPC  What'
+
 
 class cIOSMemoryParser:
 
@@ -202,10 +218,12 @@ class cIOSMemoryParser:
         self.dResolvedNames = {}
         self.Parse()
 
+
     def ParseSizeField(self, value):
         free = value & 0x80000000 == 0x80000000
         size = (value & 0x7FFFFFFF) * 2
         return free, size
+
 
     def InitialChecks(self):
         if self.length < self.headerSize:
@@ -226,6 +244,7 @@ class cIOSMemoryParser:
                 return False
         self.baseAddress = header[6] - 0x14
         return True
+
 
     def ExtractHeaders(self):
         index = 0
@@ -253,10 +272,12 @@ class cIOSMemoryParser:
         self.ExtractHeaders()
         return True
 
+
     def Show(self):
         print(cIOSMemoryBlockHeader.ShowHeader)
         for oIOSMemoryBlockHeader in self.Headers:
             print(oIOSMemoryBlockHeader.ShowLine())
+
 
     def ResolveNames(self, oIOSCoreDump):
         for address in self.dNames:
@@ -267,6 +288,7 @@ class cIOSMemoryParser:
 
 
 class cCiscoCWStrings:
+
     def __init__(self, data):
         self.data = data
         self.error = None
@@ -300,6 +322,7 @@ class cCiscoCWStrings:
                 self.error = 'Error: delimiters $ not found'
                 return
             self.dCWStrings[startCWString[0:delimiters[0]]] = startCWString[delimiters[0] + 1:delimiters[1]]
+
 
 class cIOSProcess:
 
@@ -366,6 +389,7 @@ class cIOSProcess:
                      },
               }
 
+
     def __init__(self, processID, data, oIOSCoreDump=None, dProcessStructureStats={}, dHeuristicsFields={}):
         if dHeuristicsFields != {}:
             for key, value in dHeuristicsFields.items():
@@ -382,7 +406,6 @@ class cIOSProcess:
             self.error = 'Error: unexpected process structure, length = {:d}'.format(self.indexProcessEnd)
         else:
             self.SetFields()
-
             if self.Q == None:
                 self.Q_str = '?'
             else:
@@ -404,18 +427,18 @@ class cIOSProcess:
                     self.TTY = None
                 else:
                     self.TTY = oIOSCoreDump.GetInteger32(self.addressTTY+4)
-
         if not self.indexProcessEnd in dProcessStructureStats:
             dProcessStructureStats[self.indexProcessEnd] = {}
         self.CalcProcessStructureStats(dProcessStructureStats[self.indexProcessEnd])
-
         if oIOSCoreDump == None or self.addressProcessName == None:
             self.name = None
         else:
             self.name = oIOSCoreDump.GetString(self.addressProcessName)
 
+
     def IsSupportedProcessStructure(self):
         return self.indexProcessEnd in cIOSProcess.dFields
+
 
     def SetField(self, fieldName):
         if self.dFields[self.indexProcessEnd][fieldName] == None:
@@ -425,9 +448,11 @@ class cIOSProcess:
             fieldValue = struct.unpack(format, self.data[position:position + 4])[0]
             exec('self.{} = fieldValue'.format(fieldName))
 
+
     def SetFields(self):
         for fieldName in self.dFields[self.indexProcessEnd]:
             self.SetField(fieldName)
+
 
     @classmethod
     def Q2Str(cls, number):
@@ -438,6 +463,7 @@ class cIOSProcess:
         else:
             return str(number)
 
+
     @classmethod
     def Ty2Str(cls, number):
         #dTys = {0:'*', 4:'we', 6:'si', 7:'sp', 8:'st'}
@@ -446,6 +472,7 @@ class cIOSProcess:
             return dTys[number]
         else:
             return str(number)
+
 
     def CalcProcessStructureStats(self, dStats):
         for index, integer32 in enumerate(struct.unpack('>' + 'I' * int(len(self.data) / 4), self.data)):
@@ -457,6 +484,7 @@ class cIOSProcess:
                     bucket[integer32] = 1
             else:
                 dStats[index] = {integer32:1}
+
 
     def Line(self):
         line = '{:4d} {}{:<2} '.format(self.processID, self.Q_str, self.Ty_str)
@@ -494,6 +522,7 @@ class cIOSProcess:
             line += '{:08X} '.format(self.addressStackBlock)
         line += uf.cn(self.name)
         return line
+
 
 class cIOSCoreDumpAnalysis:
 
@@ -538,7 +567,6 @@ class cIOSCoreDumpAnalysis:
                     oIterProcessArray = dProcessArray[addressProcessArray]
                 else:
                     oIterProcessArray = None
-
         self.processes = []
         self.dProcessStructureStats = {}
         countProcessStructureErrors = 0
@@ -551,17 +579,21 @@ class cIOSCoreDumpAnalysis:
                     self.processes.append((index + 1, addressProcess, oIOSProcess))
                 else:
                     self.processes.append((index + 1, addressProcess, None))
-
         if float(countProcessStructureErrors) / float(len(self.processes)) >= 0.95:
             self.Heuristics()
             self.processes = []
             for index, addressProcess in enumerate(addressProcesses):
                 if addressProcess != 0:
                     if addressProcess in oIOSMemoryParser.dHeadersAddressData:
-                        oIOSProcess = cIOSProcess(index + 1, oIOSMemoryParser.dHeadersAddressData[addressProcess].GetData(), self.oIOSCoreDump, self.dProcessStructureStats, {self.HeuristicsSize:self.HeuristicsFields})
+                        oIOSProcess = cIOSProcess(index + 1,
+                                                  oIOSMemoryParser.dHeadersAddressData[addressProcess].GetData(),
+                                                  self.oIOSCoreDump,
+                                                  self.dProcessStructureStats,
+                                                  {self.HeuristicsSize:self.HeuristicsFields})
                         self.processes.append((index + 1, addressProcess, oIOSProcess))
                     else:
                         self.processes.append((index + 1, addressProcess, None))
+
 
     def HeuristicsStructureAnalysis(self):
         dStats = self.dProcessStructureStats[self.HeuristicsSize]
@@ -608,6 +640,7 @@ class cIOSCoreDumpAnalysis:
         if keyMax != None:
             self.HeuristicsFields['addressProcessName'] = ('>I', keyMax*4)
 
+
     def HeuristicsFindQ(self):
         keyFound = None
         for key1 in self.dHeuristicsAnalysis:
@@ -619,16 +652,22 @@ class cIOSCoreDumpAnalysis:
         if keyFound != None:
             self.HeuristicsFields['Q'] = ('>I', keyFound*4)
 
+
     def HeuristicsFindTy(self):
         keyFound = None
         for key1 in self.dHeuristicsAnalysis:
-            if self.dHeuristicsAnalysis[key1][0] > 1 and self.dHeuristicsAnalysis[key1][1] == 0 and self.dHeuristicsAnalysis[key1][5][0] <= 2 and self.dHeuristicsAnalysis[key1][3] >= 4 and self.dHeuristicsAnalysis[key1][3] <= 10:
+            if (self.dHeuristicsAnalysis[key1][0] > 1 and
+                    self.dHeuristicsAnalysis[key1][1] == 0 and
+                    self.dHeuristicsAnalysis[key1][5][0] <= 2 and
+                    self.dHeuristicsAnalysis[key1][3] >= 4 and
+                    self.dHeuristicsAnalysis[key1][3] <= 10):
                 if keyFound == None:
                     keyFound = key1
                 else:
                     return
         if keyFound != None:
             self.HeuristicsFields['Ty'] = ('>I', keyFound*4)
+
 
     def HeuristicsAddMissingFields(self):
         dFields = {
@@ -646,6 +685,7 @@ class cIOSCoreDumpAnalysis:
         for field in dFields:
             if not field in self.HeuristicsFields:
                 self.HeuristicsFields[field] = dFields[field]
+
 
     def Heuristics(self):
         self.RanHeuristics = True
@@ -666,6 +706,7 @@ class cIOSCoreDumpAnalysis:
         self.HeuristicsFindTy()
         self.HeuristicsAddMissingFields()
 #        print({self.HeuristicsSize:self.HeuristicsFields})
+
 
 def GetAddressFromFilename(filename):
     match = re.search("-0x[0-9a-f]{8}$", filename, re.IGNORECASE)

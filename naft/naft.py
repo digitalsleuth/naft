@@ -31,14 +31,15 @@ def missing_req(requirement):
     print(req_error[requirement])
     return
 
+
 def main():
     main_parser = argparse.ArgumentParser(
         description=__description__ + ' ' + str(__version__),
         usage='naft [category] [function] [optional/required arguments]',
         epilog="Use -h on each category to view all available options."
     )
-
     subparsers = main_parser.add_subparsers(title='categories', metavar='Select one of the three following categories to begin analysis', prog='naft')
+
 
     core_parser = subparsers.add_parser('core', help='Core Dump')
     core = core_parser.add_argument_group('functions')
@@ -105,7 +106,6 @@ def main():
     if len(all_args) == 0:
         main_parser.print_help()
         main_parser.exit()
-
     if sys.argv[1] == 'core':
         if args.regions:
             icd.IOSRegions(args.coredump, all_args)
@@ -129,7 +129,6 @@ def main():
                 icd.IOSCheckText(args.coredump, args.bin, all_args)
         elif args.integrity:
             icd.IOSIntegrityText(args.coredump, all_args)
-
     if sys.argv[1] == 'network':
         if args.frames:
             if not args.coredump or not args.iomem:
@@ -141,12 +140,12 @@ def main():
                 missing_req('files')
             else:
                 gfe.ExtractIPPacketsFromFile(args.files, args.packets, all_args)
-
     if sys.argv[1] == 'image':
         if args.extract or args.ida or args.info:
             ii.CiscoIOSImageFileParser(args.bin, all_args)
         if args.scan:
             ii.CiscoIOSImageFileScanner(args.bin, all_args)
+
 
 if __name__ == '__main__':
     main()

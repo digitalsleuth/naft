@@ -11,6 +11,7 @@ import naft.modules.impf as impf
 import naft.modules.uf as uf
 import naft.modules.pfef as pfef
 
+
 def ExtractIPPacketsFromFile(filenamesRawData, filenamePCAP, arguments):
     uf.LogLine('Start')
     if arguments['ouitxt'] == None:
@@ -46,17 +47,15 @@ def ExtractIPPacketsFromFile(filenamesRawData, filenamePCAP, arguments):
                 uf.LogLine('Searching for ARP Ethernet frames')
                 pfef.ExtractARPFrames(oFrames, 0, rawData, arguments['duplicates'], True, filenameRawData)
                 countProcessedFiles += 1
-
     if countProcessedFiles > 0:
         uf.LogLine('Writing PCAP file {}'.format(filenamePCAP))
         if not oFrames.WritePCAP(filenamePCAP):
             uf.LogLine('Error writing PCAP file')
-
         uf.LogLine('Number of identified frames:   {:5d}'.format(oFrames.countFrames))
         uf.LogLine('Number of identified packets:  {:5d}'.format(oFrames.countPackets))
         uf.LogLine('Number of frames in PCAP file: {:5d}'.format(len(oFrames.frames)))
-
     uf.LogLine('Done')
+
 
 def IOSFrames(coredumpFilename, filenameIOMEM, filenamePCAP, arguments):
     uf.LogLine('Start')

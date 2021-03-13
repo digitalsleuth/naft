@@ -16,6 +16,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 MALWARE_PASSWORD = 'infected'
 
+
 def InProgress(function, obj):
     animation = "|/-\\"
     idx = 0
@@ -29,7 +30,7 @@ def InProgress(function, obj):
 
 
 def IsZIPFile(filename):
-    return filename.name.lower().endswith('.zip')
+    return filename.lower().endswith('.zip')
 
 
 def File2Data(filename):
@@ -150,7 +151,9 @@ def ParseDateTime(dtg_str):
         time_stamp = parsed_date.strftime('%b %d %Y %H:%M:%S.%f')[:-3]
     return time_stamp
 
+
 class cBufferFile():
+
     def __init__(self, filename, buffersize, bufferoverlapsize):
         self.filename = filename
         self.buffersize = buffersize
@@ -162,6 +165,7 @@ class cBufferFile():
         self.filesize = os.path.getsize(self.filename)
         self.bytesread = 0
 
+
     def Read(self):
         if self.fIn == None:
             try:
@@ -169,7 +173,6 @@ class cBufferFile():
             except:
                 self.error = True
                 return False
-
         if self.index == None:
             self.index = 0
             try:
@@ -207,6 +210,7 @@ class cBufferFile():
                 self.fIn.close()
                 self.error = True
                 return False
+
 
     def Progress(self):
         return int(float(self.bytesread) / float(self.filesize) * 100.0)
