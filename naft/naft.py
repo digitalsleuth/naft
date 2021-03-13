@@ -88,12 +88,12 @@ def main():
     image_parser = subparsers.add_parser('image', help='IOS Image Analysis')
     image = image_parser.add_argument_group('functions')
     image_group = image.add_mutually_exclusive_group(required=True)
-    image_group.add_argument('--extract', help='Extract the compressed image to path: [-m] [-v]', metavar='PATH')
-    image_group.add_argument('--ida', help='Extract the compressed image to path and patch it for IDA Pro: [-m] [-v]', metavar='PATH')
+    image_group.add_argument('--info', action='store_true', default=False, help='Scan defined image and output metadata, requires --bin')
+    image_group.add_argument('--extract', help='Extract the compressed image to path, requires --bin: [-m] [-v]', metavar='PATH')
+    image_group.add_argument('--ida', help='Extract the compressed image to path and patch it for IDA Pro, requires --bin: [-m] [-v]', metavar='PATH')
     image_group.add_argument('--scan', metavar='DIR', help='Find and scan all images within DIR: [-R] [-r] [-m] [-l]')
-    image_group.add_argument('--info', action='store_true', default=False, help='Scan defined image and output metadata')
+    image_parser.add_argument('--bin', help='IOS bin file', metavar='FILE')
     image_parser.add_argument('-m', '--md5db', help='Compare MD5 hash with provided CSV formatted db', metavar='CSV')
-    image_parser.add_argument('bin', help='IOS bin file, use wildcard for --scan')
     image_parser.add_argument('-R', '--recurse', action='store_true', default=False, help='Recursively search sub-directories for images')
     image_parser.add_argument('-r', '--resume', help='Resume an interrupted scan from Pickle file', metavar='PKL')
     image_parser.add_argument('-l', '--log', help='Write scan result to log file', metavar='FILE')
@@ -144,7 +144,10 @@ def main():
 
     if sys.argv[1] == 'image':
         if args.extract or args.ida or args.info:
-            ii.CiscoIOSImageFileParser(args.bin, all_args)
+            if not args.bin:
+                missing_req('bin')
+            else:
+                ii.CiscoIOSImageFileParser(args.bin, all_args)
         if args.scan:
             ii.CiscoIOSImageFileScanner(args.scan, all_args)
 
