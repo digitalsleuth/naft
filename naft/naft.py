@@ -20,7 +20,7 @@ import sys
 def missing_req(requirement):
     req_error = {
         'core': 'Please provide a core dump using the --coredump argument.',
-        'bin': 'Please provide an IOS bin file using the --bin argument.',
+        'bin': 'Please provide an IOS bin file using the -b/--bin argument.',
         'iomem': 'Please provide an IOMEM file using the --iomem argument.',
         'pcap' : 'Please provide a PCAP output filename using the --pcap argument.',
         'files' : 'Please use the --files command to provide at least one file to search.',
@@ -50,10 +50,10 @@ def main():
     core_group.add_argument('--history', action='store_true', help='Print history')
     core_group.add_argument('--events', action='store_true', help='Print events')
     core_group.add_argument('--processes', action='store_true', help='Print processes: [-f] [-d] [-S]')
-    core_group.add_argument('--check', action='store_true', help='Compare text in dump to IOS bin, requires --bin')
+    core_group.add_argument('--check', action='store_true', help='Compare text in dump to IOS bin, requires -b/--bin')
     core_group.add_argument('--integrity', action='store_true', help='Check integrity of core dump')
     core_parser.add_argument('coredump', help='Core dump file')
-    core_parser.add_argument('-a', '--raw', action='store_true', default=False, help='Search the whole core dump for CW_ strings')
+    core_parser.add_argument('-R', '--raw', action='store_true', default=False, help='Search the whole core dump for CW_ strings')
     core_parser.add_argument('-d', '--dump', action='store_true', default=False, help='Dump data')
     core_parser.add_argument('-D', '--dumpraw', action='store_true', default=False, help='Dump raw data')
     core_parser.add_argument('-s', '--strings', action='store_true', default=False, help='Dump strings in data')
@@ -62,7 +62,7 @@ def main():
     core_parser.add_argument('-r', '--resolve', action='store_true', default=False, help='Resolve names for processes')
     core_parser.add_argument('-f', '--filter', default='', help='Filter for a given name', metavar='NAME')
     core_parser.add_argument('-o', '--output', help='Output the regions or heap blocks to path', metavar='PATH')
-    core_parser.add_argument('--bin', help='IOS bin file', metavar='FILE')
+    core_parser.add_argument('-b', '--bin', help='IOS bin file', metavar='FILE')
     core_parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Increase output verbosity')
     core_parser.add_argument('-S', '--stats', action='store_true', default=False, help='Print process structure statistics')
 
@@ -89,9 +89,9 @@ def main():
     image_parser = subparsers.add_parser('image', help='IOS Image Analysis')
     image = image_parser.add_argument_group('functions')
     image_group = image.add_mutually_exclusive_group(required=True)
-    image_group.add_argument('-I', '--info', help='Scan defined image and output metadata, requires --bin', metavar='FILE')
-    image_group.add_argument('-e', '--extract', help='Extract the compressed image to path, requires --bin: [-m] [-v]', metavar='PATH')
-    image_group.add_argument('-i', '--ida', help='Extract the compressed image to path and patch it for IDA Pro, requires --bin: [-m] [-v]', metavar='PATH')
+    image_group.add_argument('-I', '--info', help='Scan defined image and output metadata, requires -b/--bin', metavar='FILE')
+    image_group.add_argument('-x', '--extract', help='Extract the compressed image to path, requires -b/--bin: [-m] [-v]', metavar='PATH')
+    image_group.add_argument('-i', '--ida', help='Extract the compressed image to path and patch it for IDA Pro, requires -b/--bin: [-m] [-v]', metavar='PATH')
     image_group.add_argument('-s', '--scan', help='Find and scan all images within PATH: [-R] [-r] [-m] [-l]', metavar='PATH')
     image_parser.add_argument('-b', '--bin', help='IOS bin file', metavar='FILE')
     image_parser.add_argument('-m', '--md5db', help='Compare MD5 hash with provided CSV formatted db', metavar='CSV')
