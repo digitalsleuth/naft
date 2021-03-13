@@ -131,7 +131,7 @@ def CiscoIOSImageFileScanner(dir, arguments):
         if arguments['recurse']:
             print('Recursive search')
         countFilenames = len(filenames)
-        print(f"\nPerforming scan on {countFilenames} file(s):\n")
+        print("Performing scan on {:d} file(s):\n".format(countFilenames))
         counter = 1
         if arguments['log'] != None:
             f = open(arguments['log'], 'w')

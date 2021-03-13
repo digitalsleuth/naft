@@ -9,8 +9,8 @@ __date__ = '2021/03/05'
 import time
 import os
 import zipfile
-import datetime as dt
 import re
+import sys
 from dateutil import parser as duparser
 from concurrent.futures import ProcessPoolExecutor
 
@@ -21,12 +21,10 @@ def InProgress(function, obj):
     idx = 0
     pool = ProcessPoolExecutor(3)
     future = pool.submit(function, (obj))
-
     while not future.done():
-        print("Processing... "+animation[idx % len(animation)], end="\r")
+        print("Processing... {}".format(animation[idx % len(animation)]), end="\r", file=sys.stderr)
         idx += 1
         time.sleep(0.1)
-
     return future.result()
 
 

@@ -88,10 +88,10 @@ def main():
     image_parser = subparsers.add_parser('image', help='IOS Image Analysis')
     image = image_parser.add_argument_group('functions')
     image_group = image.add_mutually_exclusive_group(required=True)
-    image_group.add_argument('--extract', help='Extract the compressed image to path: [-m] [-v]', metavar='PATH')
-    image_group.add_argument('--ida', help='Extract the compressed image to path and patch it for IDA Pro: [-m] [-v]', metavar='PATH')
-    image_group.add_argument('--scan', metavar='DIR', help='Find and scan all images within DIR: [-R] [-r] [-m] [-l]')
-    image_group.add_argument('--info', action='store_true', default=False, help='Scan defined image and output metadata')
+    image_group.add_argument('-e', '--extract', help='Extract the compressed image to path: [-m] [-v]', metavar='PATH')
+    image_group.add_argument('-i', '--ida', help='Extract the compressed image to path and patch it for IDA Pro: [-m] [-v]', metavar='PATH')
+    image_group.add_argument('-s', '--scan', action='store_true', help='Find and scan all images within DIR: [-R] [-r] [-m] [-l]')
+    image_group.add_argument('-I', '--info', action='store_true', default=False, help='Scan defined image and output metadata')
     image_parser.add_argument('-m', '--md5db', help='Compare MD5 hash with provided CSV formatted db', metavar='CSV')
     image_parser.add_argument('bin', help='IOS bin file, use wildcard for --scan')
     image_parser.add_argument('-R', '--recurse', action='store_true', default=False, help='Recursively search sub-directories for images')
@@ -146,7 +146,7 @@ def main():
         if args.extract or args.ida or args.info:
             ii.CiscoIOSImageFileParser(args.bin, all_args)
         if args.scan:
-            ii.CiscoIOSImageFileScanner(args.scan, all_args)
+            ii.CiscoIOSImageFileScanner(args.bin, all_args)
 
 if __name__ == '__main__':
     main()
