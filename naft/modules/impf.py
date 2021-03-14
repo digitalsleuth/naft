@@ -21,6 +21,7 @@ class cCiscoMagic:
 
     STR_FEEDFACE     = b'\xFE\xED\xFA\xCE'
     STR_FADEFAD1     = b'\xFA\xDE\xFA\xD1\x00\x00\x00\x18'
+    STR_BAD00B1E     = b'\xBA\xD0\x0B\x1E'
 
     STR_CW_DELIMITER = b'$'
     STR_CW_          = b'CW_'
