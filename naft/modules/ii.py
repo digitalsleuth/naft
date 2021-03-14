@@ -26,17 +26,17 @@ def CiscoIOSImageFileParser(filename, arguments):
     if image is None:
         print('Error reading {}'.format(filename))
         return
-    oIOSImage = uf.InProgress(iipf.cIOSImage, image)
+    oIOSImage = iipf.cIOSImage(image, filename)
     oIOSImage.Print()
     if arguments['md5db']:
         if arguments['md5db'] is not None:
-            oMD5Database = cMD5Database(arguments['md5db'])
+            oMD5Database = iipf.cMD5Database(arguments['md5db'])
         md5hash = hashlib.md5(image).hexdigest()
         filenameCSV, filenameDB = oMD5Database.Find(md5hash)
         if filenameCSV is None:
             print('File not found in md5 database')
         else:
-            print('File found in md5 database {} {}'.format(filenameCSV, filenameDB))
+            print('File found in md5 database: {}, filename: {}'.format(filenameCSV, filenameDB))  # Add file date to this
     if arguments['verbose']:
         print('\nELF Headers:\n')
         print(f"index {'index_str': >10} {'type': >10} {'flags': >10} {'offset': >10} {'size': >10} {'data': >10}")
@@ -153,7 +153,7 @@ def CiscoIOSImageFileScanner(dir, arguments):
             if image is None:
                 line.extend(['Error reading'])
             else:
-                oIOSImage = uf.InProgress(iipf.cIOSImage, image)
+                oIOSImage = iipf.cIOSImage(image, filename)
                 if oIOSImage.oCWStrings is not None and oIOSImage.oCWStrings.error is None:
                     line.extend([(uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, b'CW_VERSION'))).decode(),
                                  (uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, b'CW_FAMILY'))).decode()])

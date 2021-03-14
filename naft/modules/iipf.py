@@ -134,8 +134,9 @@ class cELF:
 
 class cIOSImage:
 
-    def __init__(self, data):
+    def __init__(self, data, filename):
         self.data = data
+        self.filename = filename
         self.embeddedMD5 = None
         self.imageUncompressedName = None
         self.sizeUncompressed = None
@@ -262,7 +263,7 @@ class cIOSImage:
                     self.calculatedChecksumUncompressed = cIOSImage.CalcChecksum(self.imageUncompressed)
 
     def Print(self):
-        print('IOS Image Metadata:\n')
+        print('IOS Image Metadata: {}\n'.format(os.path.basename(self.filename)))
         if self.oCWStrings is not None and self.oCWStrings.error is None:
             for key in [b'CW_VERSION', b'CW_FAMILY', b'CW_FEATURE', b'CW_IMAGE', b'CW_SYSDESCR']:
                 if key in self.oCWStrings.dCWStrings:
@@ -356,15 +357,15 @@ class cMD5Database():
             result = self.AddCSV(filenameCSV)
             countDoubles += result[0]
             countMD5EmptyString += result[1]
-        print('{} unique entries in md5 database, %d doubles of which {} empty string'.format(len(self.dMD5Database), countDoubles, countMD5EmptyString))
+        print('{} unique entries in all md5 databases, {:d} doubles, of which {} are empty strings'.format(len(self.dMD5Database), countDoubles, countMD5EmptyString))
 
     def AddCSV(self, filenameCSV):
         countDoubles = 0
         countMD5EmptyString = 0
-        md5EmptyString = hashlib.md5('').hexdigest()
+        md5EmptyString = hashlib.md5(b'').hexdigest()
         basename = os.path.basename(filenameCSV)
         for line in open(filenameCSV, 'r').readlines():
-            md5hash, filename = line.strip('\n').split(',')
+            md5hash, filename, filedate = line.strip('\n').split(',')
             md5hash = md5hash.lower()
             if md5hash in self.dMD5Database:
                 if md5hash == md5EmptyString:
