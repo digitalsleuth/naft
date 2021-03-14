@@ -161,7 +161,7 @@ class cIOSImage:
 #        if length - index != 0:
 #            for x in data[index:]:
 #                if x != '\x00':
-#                    print('Warning: checksum data remainder not zero (%d)' % ord(x))
+#                    print('Warning: checksum data remainder not zero ({:d})'.format(x))
         return sum
 
     def ExtractEmbeddedMD5(self, data):
@@ -170,7 +170,7 @@ class cIOSImage:
             return None
         if index + len(impf.cCiscoMagic.STR_FADEFAD1) + 16 > len(data):
             return None
-        return(''.join(['%02x' % ord(x) for x in data[index + len(impf.cCiscoMagic.STR_FADEFAD1):index + len(impf.cCiscoMagic.STR_FADEFAD1) + 16]]))
+        return(''.join(['{:02X}'.format(x) for x in data[index + len(impf.cCiscoMagic.STR_FADEFAD1):index + len(impf.cCiscoMagic.STR_FADEFAD1) + 16]]).lower())
 
     def ExtractSections(self, oELF):
         oSectionHeaderCompressedImage = None
