@@ -30,6 +30,7 @@ def InProgress(function, obj):
 
 
 def IsZIPFile(filename):
+    filename = os.path.basename(filename)
     return filename.lower().endswith('.zip')
 
 

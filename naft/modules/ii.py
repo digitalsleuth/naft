@@ -30,13 +30,13 @@ def CiscoIOSImageFileParser(filename, arguments):
     oIOSImage.Print()
     if arguments['md5db']:
         if arguments['md5db'] is not None:
-            oMD5Database = iipf.cMD5Database(arguments['md5db'])
+            oMD5Database = iipf.cMD5Database(arguments['md5db'], arguments['scan'])
         md5hash = hashlib.md5(image).hexdigest()
-        filenameCSV, filenameDB = oMD5Database.Find(md5hash)
+        filenameCSV, filenameDB, filedateDB = oMD5Database.Find(md5hash)
         if filenameCSV is None:
             print('File not found in md5 database')
         else:
-            print('File found in md5 database: {}, filename: {}'.format(filenameCSV, filenameDB))  # Add file date to this
+            print('File found in md5 database: {}, filename: {}, dated: {}'.format(filenameCSV, filenameDB, filedateDB))
     if arguments['verbose']:
         print('\nELF Headers:\n')
         print(f"index {'index_str': >10} {'type': >10} {'flags': >10} {'offset': >10} {'size': >10} {'data': >10}")
@@ -143,7 +143,7 @@ def CiscoIOSImageFileScanner(dir, arguments):
         'embeddedMD5'
         ]
     if arguments['md5db']:
-        scan_header.extend(['md5hash', 'csvFilename', 'dbFilename'])
+        scan_header.extend(['md5hash', 'csvFilename', 'dbFilename', 'dbFileDate'])
     print(','.join(scan_header))
     while len(filenames) > 0:
         filename = filenames[0]
@@ -159,6 +159,14 @@ def CiscoIOSImageFileScanner(dir, arguments):
                                  (uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, b'CW_FAMILY'))).decode()])
                 else:
                     line.extend([uf.cn(None), uf.cn(None)])
+                if oIOSImage.checksumCompressed is None:
+                    checksumCompressed = 'Not found'
+                else:
+                    checksumCompressed = '0x{:08X}'.format(oIOSImage.checksumCompressed)
+                if oIOSImage.checksumUncompressed is None:
+                    checksumUncompressed = 'Not found'
+                else:
+                    checksumUncompressed = '0x{:08X}'.format(oIOSImage.checksumUncompressed)
                 line.extend([
                     str(len(image)),
                     '{:.2f}'.format(Entropy(image)),
@@ -166,19 +174,20 @@ def CiscoIOSImageFileScanner(dir, arguments):
                     str(oIOSImage.oELF.error),
                     str(oIOSImage.oELF.countSections),
                     str(uf.cn(oIOSImage.oELF.stringTableIndex)),
-                    '0x{:08X}'.format(uf.cn(oIOSImage.checksumCompressed)),
+                    str(checksumCompressed),
                     str(oIOSImage.checksumCompressed is not None and
                         oIOSImage.checksumCompressed == oIOSImage.calculatedChecksumCompressed),
-                    '0x{:08X}'.format(uf.cn(oIOSImage.checksumUncompressed)),
+                    str(checksumUncompressed),
                     str(oIOSImage.checksumUncompressed is not None and
                         oIOSImage.checksumUncompressed == oIOSImage.calculatedChecksumUncompressed),
                     uf.cn(oIOSImage.imageUncompressedName),
                     uf.cn(oIOSImage.embeddedMD5)
                 ])
                 if arguments['md5db']:
+                    oMD5Database = iipf.cMD5Database(arguments['md5db'], arguments['scan'])
                     md5hash = hashlib.md5(image).hexdigest()
-                    filenameCSV, filenameDB = oMD5Database.Find(md5hash)
-                    line.extend([md5hash, uf.cn(filenameCSV), uf.cn(filenameDB)])
+                    filenameCSV, filenameDB, filedateDB = oMD5Database.Find(md5hash)
+                    line.extend([md5hash, uf.cn(filenameCSV), uf.cn(filenameDB), uf.cn(filedateDB)])
             strLine = ','.join(line)
             print(strLine)
             if arguments['log'] is not None:

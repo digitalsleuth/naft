@@ -137,6 +137,7 @@ class cIOSImage:
     def __init__(self, data, filename):
         self.data = data
         self.filename = filename
+        self.fileMD5 = hashlib.md5(data).hexdigest()
         self.embeddedMD5 = None
         self.imageUncompressedName = None
         self.sizeUncompressed = None
@@ -270,6 +271,7 @@ class cIOSImage:
                     print('{}:{}{}'.format(key.decode('utf-8'), ' ' * (22 - len(key)), self.oCWStrings.dCWStrings[key].decode('utf-8')))
         booleanValue = {True: 'identical', False: 'DIFFERENT'}
         if self.oELF.error == 0:
+            print('File MD5:              {}'.format(self.fileMD5))
             print('Entry point:           0x{:08X}'.format(self.oELF.addressEntry))
             print('Number of sections:    {:d}'.format(self.oELF.countSections))
             print('Embedded MD5:          {}'.format(uf.cn(self.embeddedMD5)))
@@ -349,7 +351,7 @@ class cIOSImage:
 
 class cMD5Database():
 
-    def __init__(self, directoryCSVFiles):
+    def __init__(self, directoryCSVFiles, scanArg):
         self.dMD5Database = {}
         countDoubles = 0
         countMD5EmptyString = 0
@@ -357,7 +359,8 @@ class cMD5Database():
             result = self.AddCSV(filenameCSV)
             countDoubles += result[0]
             countMD5EmptyString += result[1]
-        print('{} unique entries in all md5 databases, {:d} doubles, of which {} are empty strings'.format(len(self.dMD5Database), countDoubles, countMD5EmptyString))
+        if not scanArg:
+            print('{} unique entries in all MD5 databases, {:d} doubles, of which {} are empty strings'.format(len(self.dMD5Database), countDoubles, countMD5EmptyString))
 
     def AddCSV(self, filenameCSV):
         countDoubles = 0
@@ -372,11 +375,11 @@ class cMD5Database():
                     countMD5EmptyString += 1
                 countDoubles += 1
             else:
-                self.dMD5Database[md5hash] = (basename, filename.strip(' '))
+                self.dMD5Database[md5hash] = (basename, filename.strip(' '), filedate.strip(' '))
         return (countDoubles, countMD5EmptyString)
 
     def Find(self, md5hash):
         if md5hash in self.dMD5Database:
             return self.dMD5Database[md5hash]
         else:
-            return None, None
+            return None, None, None
