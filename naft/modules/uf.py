@@ -121,11 +121,13 @@ def FindAllStrings(string, search):
     return indices
 
 
-def cn(value):
+def cn(value, output_format = None):
     if value is None:
         return 'Not found'
-    else:
+    elif output_format is None:
         return value
+    else:
+        return output_format.format(value)
 
 
 def Timestamp(epoch=None):

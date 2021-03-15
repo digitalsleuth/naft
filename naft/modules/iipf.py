@@ -55,8 +55,22 @@ class cELF:
         self.Parse()
 
     def ParseELFHeader(self):
+        self.ELF_ERRORS = {
+            1: 'File is less than 52 bytes',
+            2: 'File does not contain ELF header',
+            3: 'File is 32-bit ELF',
+            4: 'File is in MSB format',
+            5: 'ELF header size is not 52 bytes',
+            6: 'Program header size is not 32 bytes',
+            7: 'Total number of program headers is not 1',
+            8: 'Section header size is not 40 bytes',
+            9: 'File is in MZIP format, currently not supported'
+            }
         if len(self.data) < 52:
             self.error = 1
+            return
+        if self.data[0:4] == b'MZIP':  #Cisco MZIP MAGIC number
+            self.error = 9
             return
         if self.data[0:4] != b'\x7FELF':  # ELF MAGIC number
             self.error = 2
@@ -204,11 +218,7 @@ class cIOSImage:
         self.oELF = cELF(self.data)
         if self.oELF.error != 0:
             self.error = 1
-            print('ELF parsing error {:d}.'.format(self.oELF.error))
-            if self.oELF.error <= 2:
-                print('This is not an ELF file.')
-            elif self.oELF.error < 5:
-                print('This is probably not an ELF file/Cisco IOS image.')
+            print('Error Parsing {} for ELF header: {}.'.format(self.filename.name, self.oELF.ELF_ERRORS[self.oELF.error]))
             return
         self.oSectionHeaderCompressedImage, self.oSectionHeaderEmbeddedMD5, self.oSectionHeaderCWStrings = self.ExtractSections(self.oELF)
         if self.oSectionHeaderEmbeddedMD5 is not None:

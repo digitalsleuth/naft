@@ -124,8 +124,7 @@ def CiscoIOSImageFileScanner(dir, arguments):
         fPickle.close()
         print('Pickle file loaded')
     scan_header = [
-        'counter',
-        'countFilenames',
+        '#',
         'filename',
         'CW_VERSION',
         'CW_FAMILY',
@@ -148,7 +147,7 @@ def CiscoIOSImageFileScanner(dir, arguments):
     while len(filenames) > 0:
         filename = filenames[0]
         try:
-            line = [str(counter), str(countFilenames), filename.name]
+            line = [str(counter), str(filename.name)]
             image = uf.File2Data(filename)
             if image is None:
                 line.extend(['Error reading'])
@@ -174,10 +173,10 @@ def CiscoIOSImageFileScanner(dir, arguments):
                     str(oIOSImage.oELF.error),
                     str(oIOSImage.oELF.countSections),
                     str(uf.cn(oIOSImage.oELF.stringTableIndex)),
-                    str(checksumCompressed),
+                    str(uf.cn(oIOSImage.checksumCompressed, '0x{:08X}')),
                     str(oIOSImage.checksumCompressed is not None and
                         oIOSImage.checksumCompressed == oIOSImage.calculatedChecksumCompressed),
-                    str(checksumUncompressed),
+                    str(uf.cn(oIOSImage.checksumUncompressed, '0x{:08X}')),
                     str(oIOSImage.checksumUncompressed is not None and
                         oIOSImage.checksumUncompressed == oIOSImage.calculatedChecksumUncompressed),
                     uf.cn(oIOSImage.imageUncompressedName),
