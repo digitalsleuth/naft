@@ -241,11 +241,12 @@ def FilterInitBlocksForString(coredumpFilename, searchTerm):
 
 def IOSHistory(coredumpFilename, arguments=None):
     history = []
+    hist_time_format = '%b %d %Y %H:%M:%S.%f %Z'
     for command in FilterInitBlocksForString(coredumpFilename, b'CMD: '):
         oMatch = re.search(b"'(.+)' (.+)", command)
         if oMatch:
-            history.append((uf.ParseDateTime(oMatch.group(2).decode('utf-8')), oMatch.group(1).decode('utf-8')))
-    for command in sorted(history, key=lambda x: datetime.strptime(x[0], '%b %d %Y %H:%M:%S %Z')):
+            history.append((uf.ParseDateTime(oMatch.group(2).decode('utf-8')[0:28], hist_time_format), oMatch.group(1).decode('utf-8')))
+    for command in sorted(history, key=lambda x: datetime.strptime(x[0], hist_time_format)):
         print('{}: {}'.format(command[0], command[1]))
     if not history:
         print('No history found')
@@ -253,11 +254,12 @@ def IOSHistory(coredumpFilename, arguments=None):
 
 def IOSEvents(coredumpFilename, arguments=None):
     events = []
+    evt_time_format = '%b %d %Y %H:%M:%S.%f'
     for raw_event in FilterInitBlocksForString(coredumpFilename, b': %'):
-        dtg = uf.ParseDateTime(raw_event.decode('utf-8'))
+        dtg = uf.ParseDateTime(raw_event.decode('utf-8')[1:20], evt_time_format)
         data = raw_event[22:].decode('utf-8')
         events.append((dtg, data))
-    for event in sorted(events, key=lambda x: datetime.strptime(x[0].split(',')[0], '%b %d %Y %H:%M:%S.%f')):
+    for event in sorted(events, key=lambda x: datetime.strptime(x[0].split(',')[0], evt_time_format)):
         print('{} UTC: {}'.format(event[0], event[1]))
     if not events:
         print('No events found')

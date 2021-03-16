@@ -142,17 +142,15 @@ def LogLine(line):
     print('{}: {}'.format(Timestamp(), line))
 
 
-def ParseDateTime(dtg_str):
-    dtg_events = re.compile("([A-Za-z]{3})\s([\s\d]{2})\s(\d{2}):(\d{2}):(\d{2})\.(\d{3})")
-    dtg_hist = re.compile("(\d{2}):(\d{2}):(\d{2})\s([A-Z]+)\s([A-Za-z]+)\s([A-Za-z]{3})\s([\s\d]+)\s(\d{4})")
-    if dtg_hist.match(dtg_str):
-        parsed_date = duparser.parse(dtg_str[0:28])
-        time_stamp = parsed_date.strftime('%b %d %Y %H:%M:%S %Z')
+def ParseDateTime(dtg_str, time_format=None):
+    if dtg_str is None:
+        return 'No date found'
+    elif time_format is None:
+        parsed_date = duparser.parse(dtg_str)
+        return parsed_date
     else:
-        dtg = dtg_events.match(dtg_str[1:20])
-        parsed_date = duparser.parse(dtg_str[1:20])
-        time_stamp = parsed_date.strftime('%b %d %Y %H:%M:%S.%f')[:-3]
-    return time_stamp
+        parsed_date = duparser.parse(dtg_str)
+        return parsed_date.strftime(time_format)
 
 
 class cBufferFile():
