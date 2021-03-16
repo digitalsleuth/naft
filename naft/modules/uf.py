@@ -16,11 +16,11 @@ from concurrent.futures import ProcessPoolExecutor
 
 MALWARE_PASSWORD = 'infected'
 
-def InProgress(function, obj):
+def InProgress(function, args):
     animation = "|/-\\"
     idx = 0
     pool = ProcessPoolExecutor(3)
-    future = pool.submit(function, (obj))
+    future = pool.submit(function, args)
 
     while not future.done():
         print("Processing... "+animation[idx % len(animation)], end="\r")
@@ -31,7 +31,9 @@ def InProgress(function, obj):
 
 
 def IsZIPFile(filename):
-    return filename.name.lower().endswith('.zip')
+    if not isinstance(filename, str):
+        filename = filename.name
+    return filename.lower().endswith('.zip')
 
 
 def File2Data(filename):

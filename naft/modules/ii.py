@@ -28,7 +28,7 @@ def CiscoIOSImageFileParser(filename, arguments):
         print('Error reading {}'.format(filename))
         return
 
-    oIOSImage = uf.InProgress(iipf.cIOSImage, image)
+    oIOSImage = uf.InProgress(iipf.cIOSImage, (image))
     oIOSImage.Print()
 
     if arguments['md5db']:
@@ -78,36 +78,26 @@ def Entropy(data):
                 result -= percentage*math.log(percentage, 2)
     return result
 
-#def GlobRecurse(filewildcard):
-#    filenames = []
-#    directory = os.path.dirname(filewildcard)
-#    if directory == '':
-#        directory = '.'
-#    for entry in os.listdir(directory):
-#        if os.path.isdir(os.path.join(directory, entry)):
-#            filenames.extend(GlobRecurse(os.path.join(directory, entry, os.path.basename(filewildcard))))
-#    filenames.extend(glob.glob(filewildcard))
-#    return filenames
-
-#def GlobFilelist(filewildcard, arguments):
-#    if arguments['recurse']:
-#        return GlobRecurse(filewildcard)
-#    else:
-#        return glob.glob(filewildcard)
-
 def TargetDir(dir, arguments):
     bins = []
     tdir = Path(dir)
+    R = False
+
     if tdir.is_dir():
         if arguments['recurse']:
             for child in tdir.rglob('*'):
                 if child.is_file() and child.suffix == '.bin':
+                    R = True
                     bins.append(child)
         else:
             for child in tdir.iterdir():
                 if child.is_file() and child.suffix == '.bin':
                     bins.append(child)
-    return tdir, bins
+
+    if tdir.is_file() and tdir.suffix == '.bin':
+        bins.append(tdir)
+
+    return tdir, bins, R
 
 def vn(dictionary, key):
     if key in dictionary:
@@ -123,12 +113,12 @@ def PickleData(data):
 
 def CiscoIOSImageFileScanner(dir, arguments):
     if not arguments['resume']:
-        tdir, filenames = TargetDir(dir, arguments)
+        tdir, filenames, R = TargetDir(dir, arguments)
         if not filenames:
-            print('No images found. Verify DIR.')
+            print('No image(s) found. Verify FILE/DIR path.')
             return
-        print('Target directory: {}'.format(tdir.resolve()))
-        if arguments['recurse']:
+        print('Target path: {}'.format(tdir.resolve()))
+        if arguments['recurse'] and R == True:
             print('Recursive search')
         countFilenames = len(filenames)
         print(f"\nPerforming scan on {countFilenames} file(s):\n")
@@ -172,7 +162,7 @@ def CiscoIOSImageFileScanner(dir, arguments):
             if image == None:
                 line.extend(['Error reading'])
             else:
-                oIOSImage = uf.InProgress(iipf.cIOSImage, image)
+                oIOSImage = uf.InProgress(iipf.cIOSImage, (image))
                 if oIOSImage.oCWStrings != None and oIOSImage.oCWStrings.error == None:
                     line.extend([(uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, b'CW_VERSION'))).decode(), (uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, b'CW_FAMILY'))).decode()])
                 else:
