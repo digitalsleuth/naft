@@ -89,7 +89,7 @@ def main():
     image_group.add_argument('-i', '--info', action='store_true', help='Scan defined image and output metadata, requires -b/--bin')
     image_group.add_argument('-x', '--extract', help='Extract the compressed image to path, requires -b/--bin: [-m] [-v]', metavar='PATH')
     image_group.add_argument('-I', '--ida', help='Extract the compressed image to path and patch it for IDA Pro, requires -b/--bin: [-m] [-v]', metavar='PATH')
-    image_group.add_argument('-s', '--scan', help='Find and scan all images within PATH: [-R] [-r] [-m] [-l]', metavar='PATH')
+    image_group.add_argument('-s', '--scan', help='Scan specific image or all images within DIR: [-R] [-r] [-m] [-l]', metavar='FILE/DIR')
     image_parser.add_argument('-b', '--bin', help='IOS bin file', metavar='FILE')
     image_parser.add_argument('-m', '--md5db', help='Compare MD5 hash with provided CSV formatted db', metavar='CSV')
     image_parser.add_argument('-R', '--recurse', action='store_true', default=False, help='Recursively search sub-directories for images')

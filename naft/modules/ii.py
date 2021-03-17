@@ -26,7 +26,7 @@ def CiscoIOSImageFileParser(filename, arguments):
     if image is None:
         print('Error reading {}'.format(filename))
         return
-    oIOSImage = iipf.cIOSImage(image, filename)
+    oIOSImage = uf.InProgress(iipf.cIOSImage, image, filename)
     oIOSImage.Print()
     if arguments['md5db']:
         if arguments['md5db'] is not None:
@@ -77,8 +77,10 @@ def Entropy(data):
 def TargetDir(dir, arguments):
     bins = []
     tdir = Path(dir)
+    R = False
     if tdir.is_dir():
         if arguments['recurse']:
+            R = True
             for child in tdir.rglob('*'):
                 if child.is_file() and child.suffix == '.bin':
                     bins.append(child)
@@ -86,7 +88,9 @@ def TargetDir(dir, arguments):
             for child in tdir.iterdir():
                 if child.is_file() and child.suffix == '.bin':
                     bins.append(child)
-    return tdir, bins
+    if tdir.is_file() and tdir.suffix == '.bin':
+        bins.append(tdir)
+    return tdir, bins, R
 
 
 def vn(dictionary, key):
@@ -105,12 +109,12 @@ def PickleData(data):
 
 def CiscoIOSImageFileScanner(dir, arguments):
     if not arguments['resume']:
-        tdir, filenames = TargetDir(dir, arguments)
+        tdir, filenames, R = TargetDir(dir, arguments)
         if not filenames:
-            print('No images found. Verify DIR.')
+            print('No image(s) found. Verify FILE/DIR path.')
             return
-        print('Target directory: {}'.format(tdir.resolve()))
-        if arguments['recurse']:
+        print('Target path: {}'.format(tdir.resolve()))
+        if arguments['recurse'] and R == True:
             print('Recursive search')
         countFilenames = len(filenames)
         print("Performing scan on {:d} file(s):\n".format(countFilenames))
@@ -152,7 +156,7 @@ def CiscoIOSImageFileScanner(dir, arguments):
             if image is None:
                 line.extend(['Error reading'])
             else:
-                oIOSImage = iipf.cIOSImage(image, filename)
+                oIOSImage = uf.InProgress(iipf.cIOSImage, image, filename.name)
                 if oIOSImage.oCWStrings is not None and oIOSImage.oCWStrings.error is None:
                     line.extend([(uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, b'CW_VERSION'))).decode(),
                                  (uf.cn(vn(oIOSImage.oCWStrings.dCWStrings, b'CW_FAMILY'))).decode()])

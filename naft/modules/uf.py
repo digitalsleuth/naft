@@ -17,11 +17,11 @@ from concurrent.futures import ProcessPoolExecutor
 MALWARE_PASSWORD = 'infected'
 
 
-def InProgress(function, obj):
+def InProgress(function, *args):
     animation = "|/-\\"
     idx = 0
     pool = ProcessPoolExecutor(3)
-    future = pool.submit(function, (obj))
+    future = pool.submit(function, *args)
     while not future.done():
         print("Processing... {}".format(animation[idx % len(animation)]), end="\r", file=sys.stderr)
         idx += 1
