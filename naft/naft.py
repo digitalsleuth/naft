@@ -44,7 +44,7 @@ def main():
     core = core_parser.add_argument_group('functions')
     core_group = core.add_mutually_exclusive_group(required=True)
     core_group.add_argument('--regions', action='store_true', help='List regions: [-o]')
-    core_group.add_argument('--cwstrings', action='store_true', help='Print CW_ strings: [-a]')
+    core_group.add_argument('--cwstrings', action='store_true', help='Print CW_ strings: [-R]')
     core_group.add_argument('--heap', action='store_true', help='List heaps: [-d] [-D] [-s] [-m] [-g] [-r] [-f] [-o] [-v]')
     core_group.add_argument('--history', action='store_true', help='Print history')
     core_group.add_argument('--events', action='store_true', help='Print events')
