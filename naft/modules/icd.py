@@ -245,8 +245,13 @@ def IOSHistory(coredumpFilename, arguments=None):
     for command in FilterInitBlocksForString(coredumpFilename, b'CMD: '):
         oMatch = re.search(b"'(.+)' (.+)", command)
         if oMatch:
-            history.append((uf.ParseDateTime(oMatch.group(2).decode('utf-8')[0:28], hist_time_format), oMatch.group(1).decode('utf-8')))
-    for command in sorted(history, key=lambda x: datetime.strptime(x[0], hist_time_format)):
+            history.append((uf.ParseDateTime(oMatch.group(2).decode('utf-8')[0:32], hist_time_format), oMatch.group(1).decode('utf-8')))
+    def _ts_key(ts):
+        try:
+            return datetime.strptime(ts.rsplit(' ', 1)[0], '%b %d %Y %H:%M:%S.%f')
+        except ValueError:
+            return datetime.min
+    for command in sorted(history, key=lambda x: _ts_key(x[0])):
         print('{}: {}'.format(command[0], command[1]))
     if not history:
         print('No history found')
