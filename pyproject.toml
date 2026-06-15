@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=77.0.30"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+ 
+[project]
+name = "naft"
+version = "1.0.1"
+authors = [
+    { name = "@digitalsleuth and @G-K7" },
+]
+license = "MIT"
+description = "Network Appliance Forensic Toolkit"
+readme = { file = "README.md", content-type = "text/markdown" }
+keywords = ["naft", "network", "appliance", "forensic", "toolkit"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+ 
+[project.urls]
+Homepage = "https://github.com/digitalsleuth/naft"
+ 
+[project.scripts]
+naft = "naft.naft:main"
+ 
+

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 __description__ = 'Network Appliance Forensic Toolkit - IOS Core Dumps'
-__version__ = '1.0.0b1'
+__version__ = '1.0.1'
 __original_author__ = 'Didier Stevens'
 __current_authors__ = '@digitalsleuth and @G-K7'
-__date__ = '2021/03/05'
+__date__ = '2026/06/14'
 
 import struct
 import re
@@ -242,16 +242,16 @@ def FilterInitBlocksForString(coredumpFilename, searchTerm):
 def IOSHistory(coredumpFilename, arguments=None):
     history = []
     hist_time_format = '%b %d %Y %H:%M:%S.%f %Z'
+    CMD_PATTERN = re.compile(
+        rb"CMD: '(.+?)' "
+        rb"(\d{2}:\d{2}:\d{2} \S+ \S+ \S+ \d{1,2} \d{4})"
+    )
     for command in FilterInitBlocksForString(coredumpFilename, b'CMD: '):
-        oMatch = re.search(b"'(.+)' (.+)", command)
+        oMatch = CMD_PATTERN.search(command)
         if oMatch:
-            history.append((uf.ParseDateTime(oMatch.group(2).decode('utf-8')[0:32], hist_time_format), oMatch.group(1).decode('utf-8')))
-    def _ts_key(ts):
-        try:
-            return datetime.strptime(ts.rsplit(' ', 1)[0], '%b %d %Y %H:%M:%S.%f')
-        except ValueError:
-            return datetime.min
-    for command in sorted(history, key=lambda x: _ts_key(x[0])):
+            timestamp = oMatch.group(2).decode('utf-8')
+            history.append((uf.ParseDateTime(timestamp, hist_time_format), oMatch.group(1).decode('utf-8')))
+    for command in sorted(history, key=lambda x: datetime.strptime(x[0], hist_time_format)):
         print('{}: {}'.format(command[0], command[1]))
     if not history:
         print('No history found')

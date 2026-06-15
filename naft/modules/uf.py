@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 
 __description__ = 'Network Appliance Forensic Toolkit - Utility Functions'
-__version__ = '1.0.0b1'
+__version__ = '1.0.1'
 __original_author__ = 'Didier Stevens'
 __current_authors__ = '@digitalsleuth and @G-K7'
-__date__ = '2021/03/05'
+__date__ = '2026/06/14'
 
 import time
 import os
 import zipfile
-import re
 import sys
-from dateutil import parser as duparser
 from concurrent.futures import ProcessPoolExecutor
+from dateutil import parser as duparser
 
 MALWARE_PASSWORD = 'infected'
 
@@ -81,15 +80,15 @@ def SearchASCIIStrings(data, MIN_LENGTH=5):
     dStrings = {}
     iStringStart = -1
     size = len(data)
-    for iter in range(size):
-        if data[iter] >= 20 and data[iter] <= 127:
+    for iterant in range(size):
+        if data[iterant] >= 20 and data[iterant] <= 127:
             if iStringStart == -1:
-                iStringStart = iter
-            elif iter + 1 == size and iter - iStringStart + 1 >= MIN_LENGTH:
-                dStrings[iter] = data[iStringStart:iter + 1]
+                iStringStart = iterant
+            elif iterant + 1 == size and iterant - iStringStart + 1 >= MIN_LENGTH:
+                dStrings[iterant] = data[iStringStart:iterant + 1]
         elif iStringStart != -1:
-            if iter - iStringStart >= MIN_LENGTH:
-                dStrings[iter] = data[iStringStart:iter]
+            if iterant - iStringStart >= MIN_LENGTH:
+                dStrings[iterant] = data[iStringStart:iterant]
             iStringStart = -1
     return dStrings
 
@@ -97,19 +96,19 @@ def SearchASCIIStrings(data, MIN_LENGTH=5):
 def DumpBytes(memory, baseAddress, WIDTH=16):
     lineHex = ''
     lineASCII = ''
-    for iter in range(len(memory)):
-        lineHex += '{:02X} '.format(memory[iter])
-        if chr(memory[iter]) >= '\x20' and chr(memory[iter]) <= '\x7F':
-            lineASCII += chr(memory[iter])
+    for iterant in range(len(memory)):
+        lineHex += '{:02X} '.format(memory[iterant])
+        if chr(memory[iterant]) >= '\x20' and chr(memory[iterant]) <= '\x7F':
+            lineASCII += chr(memory[iterant])
         else:
             lineASCII += '.'
-        if iter % WIDTH == WIDTH - 1:
-            print(' {:08X}: {} {}'.format(int(baseAddress + iter / WIDTH * WIDTH), lineHex, lineASCII))
+        if iterant % WIDTH == WIDTH - 1:
+            print(' {:08X}: {} {}'.format(int(baseAddress + iterant / WIDTH * WIDTH), lineHex, lineASCII))
             lineHex = ''
             lineASCII = ''
     if lineHex != '':
         lineHex += ' ' * (48 - len(lineHex))
-        print(' {:08X}: {} {}'.format(int(baseAddress + iter / WIDTH * WIDTH), lineHex, lineASCII))
+        print(' {:08X}: {} {}'.format(int(baseAddress + iterant / WIDTH * WIDTH), lineHex, lineASCII))
 
 
 def FindAllStrings(string, search):
@@ -124,10 +123,9 @@ def FindAllStrings(string, search):
 def cn(value, output_format = None):
     if value is None:
         return 'Not found'
-    elif output_format is None:
+    if output_format is None:
         return value
-    else:
-        return output_format.format(value)
+    return output_format.format(value)
 
 
 def Timestamp(epoch=None):
@@ -145,12 +143,10 @@ def LogLine(line):
 def ParseDateTime(dtg_str, time_format=None):
     if dtg_str is None:
         return 'No date found'
-    elif time_format is None:
-        parsed_date = duparser.parse(dtg_str)
+    parsed_date = duparser.parse(dtg_str)
+    if time_format is None:
         return parsed_date
-    else:
-        parsed_date = duparser.parse(dtg_str)
-        return parsed_date.strftime(time_format)
+    return parsed_date.strftime(time_format)
 
 
 class cBufferFile():
@@ -189,27 +185,25 @@ class cBufferFile():
             if self.buffer == '':
                 self.fIn.close()
                 return False
-            else:
-                return True
-        else:
-            self.buffer = self.buffer[-self.bufferoverlapsize:]
-            try:
-                tempBuffer = self.fIn.read(self.buffersize)
-                if tempBuffer == '':
-                    self.fIn.close()
-                    return False
-                self.buffer += tempBuffer
-                self.index += self.buffersize
-                self.bytesread += len(tempBuffer)
-                return True
-            except MemoryError:
+            return True
+        self.buffer = self.buffer[-self.bufferoverlapsize:]
+        try:
+            tempBuffer = self.fIn.read(self.buffersize)
+            if tempBuffer == '':
                 self.fIn.close()
-                self.error = MemoryError
                 return False
-            except:
-                self.fIn.close()
-                self.error = True
-                return False
+            self.buffer += tempBuffer
+            self.index += self.buffersize
+            self.bytesread += len(tempBuffer)
+            return True
+        except MemoryError:
+            self.fIn.close()
+            self.error = MemoryError
+            return False
+        except:
+            self.fIn.close()
+            self.error = True
+            return False
 
     def Progress(self):
         return int(float(self.bytesread) / float(self.filesize) * 100.0)
