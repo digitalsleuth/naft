@@ -203,7 +203,16 @@ def IOSProcesses(coredumpFilename, arguments):
         print(oIOSCoreDumpAnalysis.err)
         return
     print(
-        " PID QTy       PC Runtime (ms)    Invoked   uSecs    Stacks TTY StackBlk Process"
+        f"{'PID':>4} "
+        f"{'QTy':>3} "
+        f"{'PC':<8} "
+        f"{'Runtime (ms)':>12} "
+        f"{'Invoked':>10} "
+        f"{'uSecs':>8} "
+        f"{'Stacks':>12} "
+        f"{'TTY':>4} "
+        f"{'StackBlk':>8} "
+        f"Process"
     )
     for processID, addressProcess, oIOSProcess in oIOSCoreDumpAnalysis.processes:
         if arguments["filter"] == "" or processID == int(arguments["filter"]):
@@ -274,33 +283,37 @@ def IOSHistory(coredumpFilename, arguments=None):
         oMatch = CMD_PATTERN.search(command)
         if oMatch:
             timestamp = oMatch.group(2).decode("utf-8")
-            history.append(
-                (
-                    uf.ParseDateTime(timestamp, hist_time_format),
-                    oMatch.group(1).decode("utf-8"),
-                )
-            )
-    for command in sorted(
-        history, key=lambda x: datetime.strptime(x[0], hist_time_format)
-    ):
-        print(f"{command[0]}: {command[1]}")
+            dt = uf.ParseDateTime(timestamp)
+            history.append((dt, oMatch.group(1).decode("utf-8")))
     if not history:
         print("No history found")
+        return
+    for command in sorted(history, key=lambda x: x[0]):
+        formatted_time = command[0].strftime(hist_time_format)
+        print(f"{formatted_time}: {command[1]}")
 
 
 def IOSEvents(coredumpFilename, arguments=None):
     events = []
     evt_time_format = "%b %d %Y %H:%M:%S.%f"
+    EVT_PATTERN = re.compile(
+        rb"([\w\s\d:]+\.\d{3,6})(.*)"
+    )
     for raw_event in FilterInitBlocksForString(coredumpFilename, b": %"):
-        dtg = uf.ParseDateTime(raw_event.decode("utf-8")[1:20], evt_time_format)
-        data = raw_event[22:].decode("utf-8")
-        events.append((dtg, data))
-    for event in sorted(
-        events, key=lambda x: datetime.strptime(x[0].split(",")[0], evt_time_format)
-    ):
-        print(f"{event[0]} UTC: {event[1]}")
+        decoded_event = raw_event.decode("utf-8")
+        clean_event, cmd_string, _ = decoded_event.partition("CMD:")
+        oMatch = EVT_PATTERN.search(clean_event.encode("utf-8"))
+        if oMatch:
+            timestamp_str = oMatch.group(1).decode("utf-8").strip()
+            event_data = oMatch.group(2).decode("utf-8").strip(" :").rstrip()
+            dt_object = uf.ParseDateTime(timestamp_str, time_format=None)
+            events.append((dt_object, event_data))
     if not events:
         print("No events found")
+        return
+    for event in sorted(events, key=lambda x: x[0]):
+        formatted_time = event[0].strftime(evt_time_format)
+        print(f"{formatted_time}: {event[1]}")
 
 
 def IOSCheckText(coredumpFilename, imageFilename, arguments):

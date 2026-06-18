@@ -569,38 +569,19 @@ class cIOSProcess:
 
     def Line(self):
         line = f"{self.processID:4d} {self.Q_str}{self.Ty_str:<2} "
-        if self.PC is None:
-            line += "???????? "
+        line += f"{self.PC:08X} " if self.PC is not None else f"{'?':>8} "
+        line += f"{self.Runtime:12d} " if self.Runtime is not None else f"{'?':>12} "
+        line += f"{self.Invoked:10d} " if self.Invoked is not None else f"{'?':>10} "
+        if self.Invoked in (0, None) or self.Runtime is None:
+            line += f"{'?':>8} "
         else:
-            line += "{self.PC:08X} "
-        if self.Runtime is None:
-            line += "       ? "
-        else:
-            line += f"    {self.Runtime:8d} "
-        if self.Invoked is None:
-            line += "       ? "
-        else:
-            line += f"  {self.Invoked:8d} "
-        if self.Invoked == 0 or self.Invoked is None or self.Runtime is None:
-            line += "      ?"
-        else:
-            line += f"{int(self.Runtime * 1000 / self.Invoked):7d}"
-        if self.LowWaterMark is None:
-            line += "    ?/"
-        else:
-            line += f"{self.LowWaterMark:5d}/"
-        if self.Stack2 is None:
-            line += "?     "
-        else:
-            line += f"{self.Stack2:<5d} "
-        if self.TTY is None:
-            line += " ? "
-        else:
-            line += f"{self.TTY:>2d} "
-        if self.addressStackBlock is None:
-            line += "       ? "
-        else:
-            line += "{self.addressStackBlock:08X} "
+            line += f"{int(self.Runtime * 1000 / self.Invoked):8d} "
+        lwm = self.LowWaterMark if self.LowWaterMark is not None else '?'
+        stk = self.Stack2 if self.Stack2 is not None else '?'
+        stks = f"{lwm}/{stk}"
+        line += f"{stks:>12}"
+        line += f"{self.TTY:>5} " if self.TTY is not None else f"{'?':>5} "
+        line += f"{self.addressStackBlock:08X} " if self.addressStackBlock is not None else f"{'?':>8} "
         line += uf.cn(self.name)
         return line
 

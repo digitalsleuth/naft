@@ -12,9 +12,46 @@ import zipfile
 import sys
 from concurrent.futures import ProcessPoolExecutor
 from dateutil import parser as duparser
+from zoneinfo import ZoneInfo
 
 MALWARE_PASSWORD = "infected"
-
+COMMON_TZS = {
+    "UTC": ZoneInfo("UTC"),
+    "GMT": ZoneInfo("GMT"),
+    "Z": ZoneInfo("UTC"),
+    "AEST": ZoneInfo("Australia/Sydney"),
+    "AEDT": ZoneInfo("Australia/Sydney"),
+    "ACST": ZoneInfo("Australia/Adelaide"),
+    "ACDT": ZoneInfo("Australia/Adelaide"),
+    "AWST": ZoneInfo("Australia/Perth"),
+    "AWDT": ZoneInfo("Australia/Perth"),
+    "EST": ZoneInfo("America/New_York"),     # Eastern Standard
+    "EDT": ZoneInfo("America/New_York"),     # Eastern Daylight
+    "CST": ZoneInfo("America/Chicago"),      # Central Standard ambiguous with China and Cuba Standard
+    "CDT": ZoneInfo("America/Chicago"),      # Central Daylight
+    "MST": ZoneInfo("America/Denver"),       # Mountain Standard
+    "MDT": ZoneInfo("America/Denver"),       # Mountain Daylight
+    "PST": ZoneInfo("America/Los_Angeles"),  # Pacific Standard
+    "PDT": ZoneInfo("America/Los_Angeles"),  # Pacific Daylight
+    "AKST": ZoneInfo("America/Anchorage"),   # Alaska Standard
+    "AKDT": ZoneInfo("America/Anchorage"),   # Alaska Daylight
+    "HST": ZoneInfo("Pacific/Honolulu"),     # Hawaii Standard
+    "AST": ZoneInfo("America/Halifax"),      # Atlantic Standard ambiguous with Arabia Standard
+    "ADT": ZoneInfo("America/Halifax"),      # Atlantic Daylight
+    "WET": ZoneInfo("Europe/London"),        # Western European
+    "WEST": ZoneInfo("Europe/London"),       # Western European Summer
+    "BST": ZoneInfo("Europe/London"),        # British Summer
+    "CET": ZoneInfo("Europe/Paris"),         # Central European
+    "CEST": ZoneInfo("Europe/Paris"),        # Central European Summer
+    "EET": ZoneInfo("Europe/Athens"),        # Eastern European
+    "EEST": ZoneInfo("Europe/Athens"),       # Eastern European Summer
+    "MSK": ZoneInfo("Europe/Moscow"),        # Moscow Time
+    "JST": ZoneInfo("Asia/Tokyo"),           # Japan Standard
+    "KST": ZoneInfo("Asia/Seoul"),           # Korea Standard
+    "IST": ZoneInfo("Asia/Kolkata"),         # Indian Standard ambiguous with Irish and Israel Standard
+    "SGT": ZoneInfo("Asia/Singapore"),       # Singapore Time
+    "HKT": ZoneInfo("Asia/Hong_Kong"),       # Hong Kong Time
+}
 
 def InProgress(function, *args):
     animation = "|/-\\"
@@ -133,10 +170,10 @@ def LogLine(line):
     print(f"{Timestamp()}: {line}")
 
 
-def ParseDateTime(dtg_str, time_format=None):
+def ParseDateTime(dtg_str, time_format=None, tzinfos=COMMON_TZS):
     if dtg_str is None:
         return "No date found"
-    parsed_date = duparser.parse(dtg_str)
+    parsed_date = duparser.parse(dtg_str, tzinfos=tzinfos)
     if time_format is None:
         return parsed_date
     return parsed_date.strftime(time_format)
