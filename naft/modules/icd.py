@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-__description__ = 'Network Appliance Forensic Toolkit - IOS Core Dumps'
-__version__ = '1.0.1'
-__original_author__ = 'Didier Stevens'
-__current_authors__ = '@digitalsleuth and @G-K7'
-__date__ = '2026/06/14'
+__description__ = "Network Appliance Forensic Toolkit - IOS Core Dumps"
+__version__ = "1.0.1"
+__original_author__ = "Didier Stevens"
+__current_authors__ = "@digitalsleuth and @G-K7"
+__date__ = "2026/06/15"
 
 import struct
 import re
@@ -18,132 +18,146 @@ import naft.modules.iipf as iipf
 
 def IOSRegions(coredumpFilename, arguments):
     oIOSCoreDump = impf.cIOSCoreDump(coredumpFilename)
-    if oIOSCoreDump.error is not None:
-        print(oIOSCoreDump.error)
+    if oIOSCoreDump.err is not None:
+        print(oIOSCoreDump.err)
     else:
-        print('Start      End        Size       Name')
+        print("Start      End        Size       Name")
         for region in oIOSCoreDump.regions:
             if region[2] is not None:
-                print('0x{:08X} 0x{:08X} {:<10d} {}'.format(region[1], (region[1] + region[2] - 1), region[2], region[0]))
-                if arguments['output']:
-                    uf.Data2File(oIOSCoreDump.Region(region[0])[1], '{}-{}-0x{:08X}'.format(os.path.basename(coredumpFilename), region[0], region[1]), arguments['output'])
+                print(
+                    f"0x{region[1]:08X} 0x{(region[1] + region[2] - 1):08X} {region[2]:<10d} {region[0]}"
+                )
+                if arguments["output"]:
+                    uf.Data2File(
+                        oIOSCoreDump.Region(region[0])[1],
+                        f"{os.path.basename(coredumpFilename)}-{region[0]}-0x{region[1]:08X}",
+                        arguments["output"],
+                    )
             else:
-                print('0x{:08X} {} {}'.format(region[1], ' ' * 21, region[0]))
+                print(f'0x{region[1]:08X} {(" " * 21)} {region[0]}')
         addressBSS, dataBSS = oIOSCoreDump.RegionBSS()
 
 
 def File2Strings(filename):
     try:
-        f = open(filename, 'r')
+        with open(filename, "r", encoding="utf-8") as f:
+            return [line.rstrip("\n") for line in f]
     except:
         return None
-    try:
-        return [line.rstrip('\n') for line in f.readlines()]
-    except:
-        return None
-    finally:
-        f.close()
 
 
 def ProcessAt(argument):
-    if argument.startswith('@'):
+    if argument.startswith("@"):
         strings = File2Strings(argument[1:])
         if strings is None:
-            raise Exception('Error reading {}'.format(argument))
+            raise Exception(f"Error reading {argument}")
         else:
             return strings
-    else:
-        return [argument]
+    return [argument]
 
 
 def ProcessHeap(oIOSMemoryBlockHeader, arguments, coredumpFilename, output_path=None):
-    if not arguments['strings']:
+    if not arguments["strings"]:
         print(oIOSMemoryBlockHeader.ShowLine())
-    if arguments['strings']:
+    if arguments["strings"]:
         dStrings = uf.SearchASCIIStrings(oIOSMemoryBlockHeader.GetData())
-        if arguments['grep'] != '':
+        if arguments["grep"] != "":
             printHeader = True
             for key, value in dStrings.items():
-                if value.find(arguments['grep'].encode('utf-8')) >= 0:
+                if value.find(arguments["grep"].encode("utf-8")) >= 0:
                     if printHeader:
                         print(oIOSMemoryBlockHeader.ShowLine())
                         printHeader = False
-                    print(' {:08X}: {}'.format(
-                        oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.BlockSize + key, value.decode('utf-8')))
-        elif arguments['minimum'] == 0 or len(dStrings) >= arguments['minimum']:
+                    print(
+                        f' {(oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.BlockSize + key):08X}: {value.decode("utf-8")}'
+                    )
+        elif arguments["minimum"] == 0 or len(dStrings) >= arguments["minimum"]:
             print(oIOSMemoryBlockHeader.ShowLine())
             for key, value in dStrings.items():
-                print(' {:08X}: {}'.format(
-                    oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.BlockSize + key, value.decode('utf-8')))
-    if arguments['dump']:
-        uf.DumpBytes(oIOSMemoryBlockHeader.GetData(),
-                     oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.headerSize)
-    if arguments['dumpraw']:
+                print(
+                    f' {(oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.BlockSize + key):08X}: {value.decode("utf-8")}'
+                )
+    if arguments["dump"]:
+        uf.DumpBytes(
+            oIOSMemoryBlockHeader.GetData(),
+            oIOSMemoryBlockHeader.address + oIOSMemoryBlockHeader.headerSize,
+        )
+    if arguments["dumpraw"]:
         uf.DumpBytes(oIOSMemoryBlockHeader.GetRawData(), oIOSMemoryBlockHeader.address)
-    if arguments['output']:
-        uf.Data2File(oIOSMemoryBlockHeader.GetData(), '{}-heap-0x{:08X}.data'.format(coredumpFilename, oIOSMemoryBlockHeader.address), output_path)
-        if arguments['verbose']:
-            print('\tFile: {}{}-heap-0x{:08X}.data created.\n'.format(output_path, coredumpFilename, oIOSMemoryBlockHeader.address))
+    if arguments["output"]:
+        uf.Data2File(
+            oIOSMemoryBlockHeader.GetData(),
+            f"{coredumpFilename}-heap-0x{oIOSMemoryBlockHeader.address:08X}.data",
+            output_path,
+        )
+        if arguments["verbose"]:
+            print(
+                f"\tFile: {output_path}{coredumpFilename}-heap-0x{oIOSMemoryBlockHeader.address:08X}.data created.\n"
+            )
 
 
 def IOSHeap(coredumpFilename, arguments):
-    if arguments['output'] is not None:
-        output_path = os.path.join(arguments['output'], "heap_data")
+    if arguments["output"] is not None:
+        output_path = os.path.join(arguments["output"], "heap_data")
         os.mkdir(output_path)
     else:
-        output_path = ''
+        output_path = ""
     oIOSCoreDump = impf.cIOSCoreDump(coredumpFilename)
-    if oIOSCoreDump.error is not None:
-        print(oIOSCoreDump.error)
+    if oIOSCoreDump.err is not None:
+        print(oIOSCoreDump.err)
         return
     addressHeap, memoryHeap = oIOSCoreDump.RegionHEAP()
     if memoryHeap is None:
-        print('Heap region not found')
+        print("Heap region not found")
         return
     oIOSMemoryParser = impf.cIOSMemoryParser(memoryHeap)
-    if arguments['resolve'] or arguments['filter'] != '':
+    if arguments["resolve"] or arguments["filter"] != "":
         oIOSMemoryParser.ResolveNames(oIOSCoreDump)
-    if arguments['filter'] == '':
+    if arguments["filter"] == "":
         print(impf.cIOSMemoryBlockHeader.ShowHeader)
         for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers:
             ProcessHeap(oIOSMemoryBlockHeader, arguments, coredumpFilename, output_path)
     else:
         print(impf.cIOSMemoryBlockHeader.ShowHeader)
         for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers:
-            if oIOSMemoryBlockHeader.AllocNameResolved == arguments['filter']:
-                ProcessHeap(oIOSMemoryBlockHeader, arguments, coredumpFilename, output_path)
+            if oIOSMemoryBlockHeader.AllocNameResolved == arguments["filter"]:
+                ProcessHeap(
+                    oIOSMemoryBlockHeader, arguments, coredumpFilename, output_path
+                )
 
 
 def IOSCWStringsSub(data):
     oCWStrings = impf.cCiscoCWStrings(data)
-    if oCWStrings.error is not None:
-        print(oCWStrings.error)
+    if oCWStrings.err is not None:
+        print(oCWStrings.err)
         return
     keys = list(oCWStrings.dCWStrings.keys())
     keys.sort()
     for key in keys:
-        if key == b'CW_SYSDESCR':
-            print('{}:'.format(key.decode('utf-8')))
-            print(oCWStrings.dCWStrings[key].decode('utf-8'))
+        if key == b"CW_SYSDESCR":
+            print(f'{key.decode("utf-8")}:')
+            print(oCWStrings.dCWStrings[key].decode("utf-8"))
         else:
-            print('{}:{}{}'.format(key.decode('utf-8'), (' ' * (22 - len(key))), oCWStrings.dCWStrings[key].decode('utf-8')))
+            print(
+                f'{key.decode("utf-8")}:{(' ' * (22 - len(key)))}{oCWStrings.dCWStrings[key].decode("utf-8")}'
+            )
 
 
 def IOSCWStrings(coredumpFilename, arguments):
-    if arguments['raw']:
+    if arguments["raw"]:
         coredump = uf.File2Data(coredumpFilename)
         if coredump is None:
-            print('Error reading file {}'.format(coredumpFilename))
+            print(f"Error reading file {coredumpFilename}")
         else:
             IOSCWStringsSub(coredump)
     else:
         oIOSCoreDump = impf.cIOSCoreDump(coredumpFilename)
-        if oIOSCoreDump.error is not None:
-            print(oIOSCoreDump.error)
+        if oIOSCoreDump.err is not None:
+            print(oIOSCoreDump.err)
             return
         addressData, memoryData = oIOSCoreDump.RegionDATA()
         if memoryData is None:
-            print('Data region not found')
+            print("Data region not found")
             return
         IOSCWStringsSub(memoryData)
 
@@ -155,10 +169,12 @@ def PrintStatsAnalysis(dStats, oIOSCoreDump):
         countKeys = len(dStats[key1])
         keys2 = list(dStats[key1].keys())
         keys2.sort()
-        if countKeys > 2 and countKeys <= 7:
-            bucket = '-> ' + ' '.join(['{:X}:{:d}'.format(key2, dStats[key1][key2]) for key2 in keys2])
+        if 2 < countKeys <= 7:
+            bucket = "-> " + " ".join(
+                [f"{key2:X}:{dStats[key1][key2]:d}" for key2 in keys2]
+            )
         else:
-            bucket = ''
+            bucket = ""
         filtered = [x for x in dStats[key1] if x != 0]
         if filtered == []:
             filteredMin = min(dStats[key1])
@@ -168,70 +184,88 @@ def PrintStatsAnalysis(dStats, oIOSCoreDump):
         regionNames = []
         for region in oIOSCoreDump.regions:
             if region[2] is not None:
-                if filteredMin >= region[1] and filteredMin <= region[1] + region[2] - 1:
-                    if not region[0] in regionNames:
-                        regionNames.append(region[0])
-                if unfilteredMax >= region[1] and unfilteredMax <= region[1] + region[2] - 1:
-                    if not region[0] in regionNames:
+                if (
+                    region[1] <= filteredMin <= region[1] + region[2] - 1
+                    or region[1] <= unfilteredMax <= region[1] + region[2] - 1
+                ):
+                    if region[0] not in regionNames:
                         regionNames.append(region[0])
         regionNames.sort()
-        regionName = ' '.join(regionNames).strip()
-        print('{:3d} {:3X}: {:3d} {:08X} {:08X} {:08X} {} {}'.format(key1, key1*4, countKeys, min(dStats[key1]), filteredMin, unfilteredMax, regionName, bucket))
+        regionName = " ".join(regionNames).strip()
+        print(
+            f"{key1:3d} {(key1*4):3X}: {countKeys:3d} {min(dStats[key1]):08X} {filteredMin:08X} {unfilteredMax:08X} {regionName} {bucket}"
+        )
 
 
 def IOSProcesses(coredumpFilename, arguments):
     oIOSCoreDumpAnalysis = impf.cIOSCoreDumpAnalysis(coredumpFilename)
-    if oIOSCoreDumpAnalysis.error is not None:
-        print(oIOSCoreDumpAnalysis.error)
+    if oIOSCoreDumpAnalysis.err is not None:
+        print(oIOSCoreDumpAnalysis.err)
         return
-    print(" PID QTy       PC Runtime (ms)    Invoked   uSecs    Stacks TTY StackBlk Process")
-    for (processID, addressProcess, oIOSProcess) in oIOSCoreDumpAnalysis.processes:
-        if arguments['filter'] == '' or processID == int(arguments['filter']):
+    print(
+        f"{'PID':>4} "
+        f"{'QTy':>3} "
+        f"{'PC':<8} "
+        f"{'Runtime (ms)':>12} "
+        f"{'Invoked':>10} "
+        f"{'uSecs':>8} "
+        f"{'Stacks':>12} "
+        f"{'TTY':>4} "
+        f"{'StackBlk':>8} "
+        f"Process"
+    )
+    for processID, addressProcess, oIOSProcess in oIOSCoreDumpAnalysis.processes:
+        if arguments["filter"] == "" or processID == int(arguments["filter"]):
             if oIOSProcess is not None:
-                if oIOSProcess.error == '':
+                if oIOSProcess.err == "":
                     line = oIOSProcess.Line()
                 else:
-                    line = '{:4d} {}'.format(processID, oIOSProcess.error)
+                    line = f"{processID:4d} {oIOSProcess.err}"
                 print(line)
-                if arguments['dump']:
+                if arguments["dump"]:
                     uf.DumpBytes(oIOSProcess.data, addressProcess)
             else:
-                print(' {:>3d} {:08X} - addressProcess not found'.format(processID, addressProcess))
+                print(
+                    f" {processID:>3d} {addressProcess:08X} - addressProcess not found"
+                )
     if oIOSCoreDumpAnalysis.RanHeuristics:
-        print('')
-        print('*** WARNING ***')
-        print('Unexpected process structure')
-        print('Please reports these results')
-        print('Fields determined with heuristics:')
-        print('Process structure size: {:d}'.format(oIOSCoreDumpAnalysis.HeuristicsSize))
+        print("")
+        print("*** WARNING ***")
+        print("Unexpected process structure")
+        print("Please reports these results")
+        print("Fields determined with heuristics:")
+        print(f"Process structure size: {oIOSCoreDumpAnalysis.HeuristicsSize:d}")
         keys = list(oIOSCoreDumpAnalysis.HeuristicsFields.keys())
         keys.sort(key=str.lower)
         for key in keys:
             value = oIOSCoreDumpAnalysis.HeuristicsFields[key]
             if value is not None:
-                print('{:-22s}: 0x{:04X}'.format(key, value[1]))
-    if arguments['stats']:
+                print(f"{key:-22s}: 0x{value[1]:04X}")
+    if arguments["stats"]:
         keys = list(oIOSCoreDumpAnalysis.dProcessStructureStats.keys())
         keys.sort()
-        print('Number of different process structures: {:d}'.format(len(keys)))
+        print(f"Number of different process structures: {len(keys):d}")
         for index in keys:
-            print('Process structures length: {:d}'.format(index))
-            PrintStatsAnalysis(oIOSCoreDumpAnalysis.dProcessStructureStats[index], oIOSCoreDumpAnalysis.oIOSCoreDump)
+            print(f"Process structures length: {index:d}")
+            PrintStatsAnalysis(
+                oIOSCoreDumpAnalysis.dProcessStructureStats[index],
+                oIOSCoreDumpAnalysis.oIOSCoreDump,
+            )
 
 
 def FilterInitBlocksForString(coredumpFilename, searchTerm):
     oIOSCoreDump = impf.cIOSCoreDump(coredumpFilename)
-    if oIOSCoreDump.error is not None:
+    if oIOSCoreDump.err is not None:
         return []
     addressHeap, memoryHeap = oIOSCoreDump.RegionHEAP()
     if memoryHeap is None:
-        print('Heap region not found')
+        print("Heap region not found")
         return []
     oIOSMemoryParser = impf.cIOSMemoryParser(memoryHeap)
     oIOSMemoryParser.ResolveNames(oIOSCoreDump)
     found = []
     for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers:
-        if oIOSMemoryBlockHeader.AllocNameResolved == 'Init':
+        if oIOSMemoryBlockHeader.AllocNameResolved == "Init":
             dStrings = uf.SearchASCIIStrings(oIOSMemoryBlockHeader.GetData())
             for value in dStrings.values():
                 if value.find(searchTerm) >= 0:
@@ -241,78 +275,93 @@ def FilterInitBlocksForString(coredumpFilename, searchTerm):
 
 def IOSHistory(coredumpFilename, arguments=None):
     history = []
-    hist_time_format = '%b %d %Y %H:%M:%S.%f %Z'
+    hist_time_format = "%b %d %Y %H:%M:%S.%f %Z"
     CMD_PATTERN = re.compile(
-        rb"CMD: '(.+?)' "
-        rb"(\d{2}:\d{2}:\d{2} \S+ \S+ \S+ \d{1,2} \d{4})"
+        rb"CMD: '(.+?)' " rb"(\d{2}:\d{2}:\d{2} \S+ \S+ \S+ \d{1,2} \d{4})"
     )
-    for command in FilterInitBlocksForString(coredumpFilename, b'CMD: '):
+    for command in FilterInitBlocksForString(coredumpFilename, b"CMD: "):
         oMatch = CMD_PATTERN.search(command)
         if oMatch:
-            timestamp = oMatch.group(2).decode('utf-8')
-            history.append((uf.ParseDateTime(timestamp, hist_time_format), oMatch.group(1).decode('utf-8')))
-    for command in sorted(history, key=lambda x: datetime.strptime(x[0], hist_time_format)):
-        print('{}: {}'.format(command[0], command[1]))
+            timestamp = oMatch.group(2).decode("utf-8")
+            dt = uf.ParseDateTime(timestamp)
+            history.append((dt, oMatch.group(1).decode("utf-8")))
     if not history:
-        print('No history found')
+        print("No history found")
+        return
+    for command in sorted(history, key=lambda x: x[0]):
+        formatted_time = command[0].strftime(hist_time_format)
+        print(f"{formatted_time}: {command[1]}")
 
 
 def IOSEvents(coredumpFilename, arguments=None):
     events = []
-    evt_time_format = '%b %d %Y %H:%M:%S.%f'
-    for raw_event in FilterInitBlocksForString(coredumpFilename, b': %'):
-        dtg = uf.ParseDateTime(raw_event.decode('utf-8')[1:20], evt_time_format)
-        data = raw_event[22:].decode('utf-8')
-        events.append((dtg, data))
-    for event in sorted(events, key=lambda x: datetime.strptime(x[0].split(',')[0], evt_time_format)):
-        print('{} UTC: {}'.format(event[0], event[1]))
+    evt_time_format = "%b %d %Y %H:%M:%S.%f"
+    EVT_PATTERN = re.compile(
+        rb"([\w\s\d:]+\.\d{3,6})(.*)"
+    )
+    for raw_event in FilterInitBlocksForString(coredumpFilename, b": %"):
+        decoded_event = raw_event.decode("utf-8")
+        clean_event, cmd_string, _ = decoded_event.partition("CMD:")
+        oMatch = EVT_PATTERN.search(clean_event.encode("utf-8"))
+        if oMatch:
+            timestamp_str = oMatch.group(1).decode("utf-8").strip()
+            event_data = oMatch.group(2).decode("utf-8").strip(" :").rstrip()
+            dt_object = uf.ParseDateTime(timestamp_str, time_format=None)
+            events.append((dt_object, event_data))
     if not events:
-        print('No events found')
+        print("No events found")
+        return
+    for event in sorted(events, key=lambda x: x[0]):
+        formatted_time = event[0].strftime(evt_time_format)
+        print(f"{formatted_time}: {event[1]}")
 
 
 def IOSCheckText(coredumpFilename, imageFilename, arguments):
     print("Comparing CW_SYSDESCR between core dump and IOS image")
     oIOSCoreDump = impf.cIOSCoreDump(coredumpFilename)
-    if oIOSCoreDump.error is not None:
-        print(oIOSCoreDump.error)
+    if oIOSCoreDump.err is not None:
+        print(oIOSCoreDump.err)
         return
-    else:
-        textAddress, textCoredump = oIOSCoreDump.RegionTEXT()
-        if textCoredump is None:
-            print('Error extracting text region from coredump {}'.format(coredumpFilename))
-            return
-        sysdescrCoredump = ''
-        dataAddress, dataCoredump = oIOSCoreDump.RegionDATA()
-        if dataCoredump is not None:
-            oCWStrings = impf.cCiscoCWStrings(dataCoredump)
-            if oCWStrings.error is None and b'CW_SYSDESCR' in oCWStrings.dCWStrings:
-                sysdescrCoredump = oCWStrings.dCWStrings[b'CW_SYSDESCR'].decode('utf-8')
+    textAddress, textCoredump = oIOSCoreDump.RegionTEXT()
+    if textCoredump is None:
+        print(f"Error extracting text region from coredump {coredumpFilename}")
+        return
+    sysdescrCoredump = ""
+    dataAddress, dataCoredump = oIOSCoreDump.RegionDATA()
+    if dataCoredump is not None:
+        oCWStrings = impf.cCiscoCWStrings(dataCoredump)
+        if oCWStrings.err is None and b"CW_SYSDESCR" in oCWStrings.dCWStrings:
+            sysdescrCoredump = oCWStrings.dCWStrings[b"CW_SYSDESCR"].decode("utf-8")
     image = uf.File2Data(imageFilename)
     if image is None:
-        print('Error reading image {}'.format(imageFilename))
+        print(f"Error reading image {imageFilename}")
         return
-    oIOSImage = iipf.cIOSImage(image)
-    if oIOSImage.error != 0:
+    oIOSImage = iipf.cIOSImage(image, imageFilename)
+    if oIOSImage.err != 0:
         return
-    sysdescrImage = ''
-    if oIOSImage.oCWStrings is not None and oIOSImage.oCWStrings.error is None and b'CW_SYSDESCR' in oIOSImage.oCWStrings.dCWStrings:
-        sysdescrImage = oIOSImage.oCWStrings.dCWStrings[b'CW_SYSDESCR'].decode('utf-8')
-    if sysdescrCoredump != '' or sysdescrImage != '':
+    sysdescrImage = ""
+    if (
+        oIOSImage.oCWStrings is not None
+        and oIOSImage.oCWStrings.err is None
+        and b"CW_SYSDESCR" in oIOSImage.oCWStrings.dCWStrings
+    ):
+        sysdescrImage = oIOSImage.oCWStrings.dCWStrings[b"CW_SYSDESCR"].decode("utf-8")
+    if sysdescrCoredump != "" or sysdescrImage != "":
         if sysdescrCoredump == sysdescrImage:
-            print('CW_SYSDESCR are identical:\n')
+            print("CW_SYSDESCR are identical:\n")
             print(sysdescrCoredump)
-        elif sysdescrCoredump == sysdescrImage.replace('-MZ', '-M', 1):
-            print('CW_SYSDESCR are equivalent:\n')
+        elif sysdescrCoredump == sysdescrImage.replace("-MZ", "-M", 1):
+            print("CW_SYSDESCR are equivalent:\n")
             print(sysdescrCoredump)
         else:
-            print('CW_SYSDESCR are different:\n')
+            print("CW_SYSDESCR are different:\n")
             print(sysdescrCoredump)
-            print('')
+            print("")
             print(sysdescrImage)
-        print('')
+        print("")
     oELF = iipf.cELF(oIOSImage.imageUncompressed)
-    if oELF.error != 0:
-        print('ELF parsing error {:d}.'.format(oELF.error))
+    if oELF.err != 0:
+        print(f"ELF parsing error {oELF.err:d}.")
         return
     countSectionExecutableInstructions = 0
     countSectionSRELOC = 0
@@ -320,72 +369,84 @@ def IOSCheckText(coredumpFilename, imageFilename, arguments):
         if oSectionHeader.flags & 4:  # SHF_EXECINSTR executable instructions
             textSectionData = oSectionHeader.sectionData
             countSectionExecutableInstructions += 1
-        if oSectionHeader.nameIndexString == 'sreloc':
+        if oSectionHeader.nameIndexString == "sreloc":
             countSectionSRELOC += 1
     if countSectionExecutableInstructions != 1:
-        print('Error executable sections in image: found {:d} sections, expected 1'.format(countSectionExecutableInstructions))
+        print(
+            f"Error executable sections in image: found {countSectionExecutableInstructions:d} sections, expected 1"
+        )
         return
     if countSectionSRELOC != 0:
-        print('Error found {:d} sreloc section in image: checktext command does not support relocation'.format(countSectionSRELOC))
+        print(
+            f"Error found {countSectionSRELOC:d} sreloc section in image: checktext command does not support relocation"
+        )
         return
     start = textAddress & 0xFF  # to be further researched
-    textImage = textSectionData[start:start + len(textCoredump)]
+    textImage = textSectionData[start : start + len(textCoredump)]
     if len(textCoredump) != len(textImage):
-        print('the text region is longer than the text section')
-        print('len(textCoredump) = {:d}'.format(len(textCoredump)))
-        print('len(textImage) = {:d}'.format(len(textImage)))
+        print("the text region is longer than the text section")
+        print(f"len(textCoredump) = {len(textCoredump):d}")
+        print(f"len(textImage) = {len(textImage):d}")
     countBytesDifferent = 0
     shortestLength = min(len(textCoredump), len(textImage))
     for iIter in range(shortestLength):
         if textCoredump[iIter] != textImage[iIter]:
             if countBytesDifferent == 0:
-                print('text region and section are different starting 0x{:08X} in coredump (iter = 0x{:08X})'.format((textAddress + iIter), iIter))
+                print(
+                    f"text region and section are different starting 0x{(textAddress + iIter):08X} in coredump (iter = 0x{iIter:08X})"
+                )
             countBytesDifferent += 1
     if countBytesDifferent == 0:
-        print('text region and section are identical')
+        print("text region and section are identical")
     else:
-        print('number of different bytes: {:d} ({:.2f}%)'.format(countBytesDifferent, (countBytesDifferent * 100.0) / shortestLength))
+        print(
+            f"number of different bytes: {countBytesDifferent:d} ({((countBytesDifferent * 100.0) / shortestLength):.2f}%)"
+        )
 
 
 def IOSIntegrityText(coredumpFilename, arguments):
     oIOSCoreDump = impf.cIOSCoreDump(coredumpFilename)
-    if oIOSCoreDump.error is not None:
-        print(oIOSCoreDump.error)
+    if oIOSCoreDump.err is not None:
+        print(oIOSCoreDump.err)
         return
     addressHeap, memoryHeap = oIOSCoreDump.RegionHEAP()
     if memoryHeap is None:
-        print('Heap region not found')
+        print("Heap region not found")
         return
     oIOSMemoryParser = impf.cIOSMemoryParser(memoryHeap)
-    print('Check start magic:')
+    print("Check start magic:")
     hit = False
     for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers:
         if oIOSMemoryBlockHeader.GetRawData()[0:4] != impf.cCiscoMagic.STR_BLOCK_BEGIN:
             print(oIOSMemoryBlockHeader.ShowLine())
             hit = True
     if not hit:
-        print('OK')
-    print('Check end magic:')
+        print("OK")
+    print("Check end magic:")
     hit = False
     for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers:
-        if struct.unpack('>I', oIOSMemoryBlockHeader.GetRawData()[-4:])[0] != impf.cCiscoMagic.INT_BLOCK_CANARY and oIOSMemoryBlockHeader.RefCnt > 0:
+        if (
+            struct.unpack(">I", oIOSMemoryBlockHeader.GetRawData()[-4:])[0]
+            != impf.cCiscoMagic.INT_BLOCK_CANARY
+            and oIOSMemoryBlockHeader.RefCnt > 0
+        ):
             print(oIOSMemoryBlockHeader.ShowLine())
             hit = True
     if not hit:
-        print('OK')
-    print('Check previous block:')
+        print("OK")
+    print("Check previous block:")
     hit = False
     for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers[1:]:
         if oIOSMemoryBlockHeader.PrevBlock == 0:
             print(oIOSMemoryBlockHeader.ShowLine())
             hit = True
     if not hit:
-        print('OK')
-    print('Check next block:')
+        print("OK")
+    print("Check next block:")
     hit = False
     for oIOSMemoryBlockHeader in oIOSMemoryParser.Headers[:-1]:
         if oIOSMemoryBlockHeader.NextBlock == 0:
             print(oIOSMemoryBlockHeader.ShowLine())
             hit = True
     if not hit:
-        print('OK')
+        print("OK")

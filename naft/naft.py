@@ -4,8 +4,10 @@ __description__ = 'Network Appliance Forensic Toolkit'
 __version__ = 'v1.0.1'
 __original_author__ = 'Didier Stevens'
 __current_authors__ = '@digitalsleuth and @G-K7'
-__date__ = '2026/06/14'
+__date__ = '2026/06/15'
 
+import sys
+import argparse
 import naft.modules.gfe as gfe
 import naft.modules.icd as icd
 import naft.modules.ii as ii
@@ -13,8 +15,6 @@ import naft.modules.impf as impf
 import naft.modules.iipf as iipf
 import naft.modules.pfef as pfef
 import naft.modules.uf as uf
-import argparse
-import sys
 
 
 def missing_req(requirement):
@@ -29,7 +29,6 @@ def missing_req(requirement):
         'strings': 'The -g/--grep command requires -s/--strings, please retry your command with -s/--strings.'
     }
     print(req_error[requirement])
-    return
 
 
 def main():

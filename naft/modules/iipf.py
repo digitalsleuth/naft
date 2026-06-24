@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-__description__ = 'Network Appliance Forensic Toolkit - IOS Image Parsing Functions'
-__version__ = '1.0.1'
-__original_author__ = 'Didier Stevens'
-__current_authors__ = '@digitalsleuth and @G-K7'
-__date__ = '2026/06/14'
+__description__ = "Network Appliance Forensic Toolkit - IOS Image Parsing Functions"
+__version__ = "1.0.1"
+__original_author__ = "Didier Stevens"
+__current_authors__ = "@digitalsleuth and @G-K7"
+__date__ = "2026/06/15"
 
 import os
 import glob
@@ -20,28 +20,28 @@ class cELFSection:
 
     def __init__(self, data, dataELF):
         self.data = data
-        header = struct.unpack('>IIIIIIIIII', self.data)
+        header = struct.unpack(">IIIIIIIIII", self.data)
         self.nameIndex = header[0]
-        self.nameIndexString = ''
+        self.nameIndexString = ""
         self.type = header[1]
         self.flags = header[2]
         self.offset = header[4]
         self.size = header[5]
         if self.offset + self.size <= len(dataELF):
-            self.sectionData = dataELF[self.offset:self.offset + self.size]
+            self.sectionData = dataELF[self.offset : self.offset + self.size]
         else:
-            self.sectionData = ''
+            self.sectionData = ""
 
     def GetHeader(self, offset=None, size=None):
         result = self.data[0:16]
         if offset is None:
             result += self.data[16:20]
         else:
-            result += struct.pack('>I', offset)
+            result += struct.pack(">I", offset)
         if size is None:
             result += self.data[20:24]
         else:
-            result += struct.pack('>I', size)
+            result += struct.pack(">I", size)
         result += self.data[24:40]
         return result
 
@@ -56,52 +56,52 @@ class cELF:
 
     def ParseELFHeader(self):
         self.ELF_ERRORS = {
-            1: 'File is less than 52 bytes',
-            2: 'File does not contain ELF header',
-            3: 'File is 32-bit ELF',
-            4: 'File is in MSB format',
-            5: 'ELF header size is not 52 bytes',
-            6: 'Program header size is not 32 bytes',
-            7: 'Total number of program headers is not 1',
-            8: 'Section header size is not 40 bytes',
-            9: 'File is in MZIP format, currently not supported'
-            }
+            1: "File is less than 52 bytes",
+            2: "File does not contain ELF header",
+            3: "File is 32-bit ELF",
+            4: "File is in MSB format",
+            5: "ELF header size is not 52 bytes",
+            6: "Program header size is not 32 bytes",
+            7: "Total number of program headers is not 1",
+            8: "Section header size is not 40 bytes",
+            9: "File is in MZIP format, currently not supported",
+        }
         if len(self.data) < 52:
-            self.error = 1
+            self.err = 1
             return
-        if self.data[0:4] == b'MZIP':  #Cisco MZIP MAGIC number
-            self.error = 9
+        if self.data[0:4] == b"MZIP":  # Cisco MZIP MAGIC number
+            self.err = 9
             return
-        if self.data[0:4] != b'\x7FELF':  # ELF MAGIC number
-            self.error = 2
+        if self.data[0:4] != b"\x7fELF":  # ELF MAGIC number
+            self.err = 2
             return
         if self.data[4] != 1:  # 32-bit ELF header
-            self.error = 3
+            self.err = 3
             return
         if self.data[5] != 2:  # MSB format
-            self.error = 4
+            self.err = 4
             return
-        header = struct.unpack('>IIIIHHHHHH', self.data[24:52])
+        header = struct.unpack(">IIIIHHHHHH", self.data[24:52])
         self.addressEntry = header[0]
         self.programOffset = header[1]
         self.sectionOffset = header[2]
         if header[4] != 52:  # ELF header size
-            self.error = 5
+            self.err = 5
             return
         if header[5] != 32:  # program header size
-            self.error = 6
+            self.err = 6
             return
         if header[6] != 1:  # number of program headers
-            self.error = 7
+            self.err = 7
             return
         if header[7] != 40:  # section header size
-            self.error = 8
+            self.err = 8
             return
         self.countSections = header[8]
         self.stringTableIndex = header[9]
 
     def GetNullTerminatedString(self, index):
-        result = ''
+        result = ""
         while self.data[index] != 0:
             result += chr(self.data[index])
             index += 1
@@ -109,41 +109,57 @@ class cELF:
 
     def ParseSectionHeaders(self):
         if len(self.data) < self.sectionOffset + self.countSections * 40:
-            self.error = 9
+            self.err = 9
             return
         self.sections = []
         for index in range(self.countSections):
-            self.sections.append(cELFSection(self.data[self.sectionOffset + index * 40:self.sectionOffset + (index + 1) * 40], self.data))
+            self.sections.append(
+                cELFSection(
+                    self.data[
+                        self.sectionOffset
+                        + index * 40 : self.sectionOffset
+                        + (index + 1) * 40
+                    ],
+                    self.data,
+                )
+            )
         if self.stringTableIndex == 0:
             dSectionNames = {
-                             0: '',
-                             1: '.shstrtab',
-                             11: '.text',
-                             17: '.rodata',
-                             25: '.sdata2',
-                             33: '.data',
-                             39: '.sdata',
-                             46: '.sbss',
-                             52: '.bss'
-                            }
+                0: "",
+                1: ".shstrtab",
+                11: ".text",
+                17: ".rodata",
+                25: ".sdata2",
+                33: ".data",
+                39: ".sdata",
+                46: ".sbss",
+                52: ".bss",
+            }
             for oELFSection in self.sections:
                 if oELFSection.nameIndex in dSectionNames:
                     oELFSection.nameIndexString = dSectionNames[oELFSection.nameIndex]
         else:
             for oELFSection in self.sections:
-                oELFSection.nameIndexString = self.GetNullTerminatedString(self.sections[self.stringTableIndex].offset + oELFSection.nameIndex)
+                oELFSection.nameIndexString = self.GetNullTerminatedString(
+                    self.sections[self.stringTableIndex].offset + oELFSection.nameIndex
+                )
 
     def Parse(self):
-        self.error = 0
+        self.err = 0
         self.ParseELFHeader()
-        if self.error == 0:
+        if self.err == 0:
             self.ParseSectionHeaders()
 
     def GetHeader(self):
         return self.data[0:52]
 
     def GetProgramHeader(self, length):
-        return self.data[self.programOffset:self.programOffset + 16] + struct.pack('>I', length) + struct.pack('>I', length + 0x10000) + self.data[self.programOffset + 24:self.programOffset + 32]
+        return (
+            self.data[self.programOffset : self.programOffset + 16]
+            + struct.pack(">I", length)
+            + struct.pack(">I", length + 0x10000)
+            + self.data[self.programOffset + 24 : self.programOffset + 32]
+        )
 
 
 class cIOSImage:
@@ -166,19 +182,15 @@ class cIOSImage:
 
     @classmethod
     def CalcChecksum(cls, data):
-        sum = 0
+        csum = 0
         index = 0
         length = len(data)
         while length - index >= 4:
-            sum += struct.unpack('>I', data[index:index + 4])[0]
-            if sum > 0xFFFFFFFF:
-                sum = (sum + 1) & 0xFFFFFFFF
+            csum += struct.unpack(">I", data[index : index + 4])[0]
+            if csum > 0xFFFFFFFF:
+                csum = (csum & 0xFFFFFFFF) + (csum >> 32)
             index += 4
-#        if length - index != 0:
-#            for x in data[index:]:
-#                if x != '\x00':
-#                    print('Warning: checksum data remainder not zero ({:d})'.format(x))
-        return sum
+        return csum
 
     def ExtractEmbeddedMD5(self, data):
         index = data.find(impf.cCiscoMagic.STR_FADEFAD1)
@@ -186,7 +198,17 @@ class cIOSImage:
             return None
         if index + len(impf.cCiscoMagic.STR_FADEFAD1) + 16 > len(data):
             return None
-        return(''.join(['{:02X}'.format(x) for x in data[index + len(impf.cCiscoMagic.STR_FADEFAD1):index + len(impf.cCiscoMagic.STR_FADEFAD1) + 16]]).lower())
+        return "".join(
+            [
+                f"{x:02X}"
+                for x in data[
+                    index
+                    + len(impf.cCiscoMagic.STR_FADEFAD1) : index
+                    + len(impf.cCiscoMagic.STR_FADEFAD1)
+                    + 16
+                ]
+            ]
+        ).lower()
 
     def ExtractSections(self, oELF):
         oSectionHeaderCompressedImage = None
@@ -195,201 +217,279 @@ class cIOSImage:
         for oSectionHeader in oELF.sections:
             if oSectionHeader.sectionData[0:4] == impf.cCiscoMagic.STR_FEEDFACE:
                 if oSectionHeaderCompressedImage is not None:
-                    print('Error: more than one FEEDFACE section')
-                    self.error = 2
+                    print("Error: more than one FEEDFACE section")
+                    self.err = 2
                 else:
                     oSectionHeaderCompressedImage = oSectionHeader
             elif oSectionHeader.sectionData.find(impf.cCiscoMagic.STR_FADEFAD1) >= 0:
                 if oSectionHeaderEmbeddedMD5 is not None:
-                    print('Error: more than one FADEFAD1 section')
-                    self.error = 3
+                    print("Error: more than one FADEFAD1 section")
+                    self.err = 3
                 else:
                     oSectionHeaderEmbeddedMD5 = oSectionHeader
             elif oSectionHeader.sectionData.find(impf.cCiscoMagic.STR_CW_BEGIN) >= 0:
                 if oSectionHeaderCWStrings is not None:
-                    print('Error: more than one CW_ strings section')
-                    self.error = 10
+                    print("Error: more than one CW_ strings section")
+                    self.err = 10
                 else:
                     oSectionHeaderCWStrings = oSectionHeader
-        return (oSectionHeaderCompressedImage, oSectionHeaderEmbeddedMD5, oSectionHeaderCWStrings)
+        return (
+            oSectionHeaderCompressedImage,
+            oSectionHeaderEmbeddedMD5,
+            oSectionHeaderCWStrings,
+        )
 
     def Parse(self):
-        self.error = 0
+        self.err = 0
         self.oELF = cELF(self.data)
-        if self.oELF.error != 0:
-            self.error = 1
-            print('Error Parsing {} for ELF header: {}.'.format(self.filename.name, self.oELF.ELF_ERRORS[self.oELF.error]))
+        if self.oELF.err != 0:
+            self.err = 1
+            print(
+                f"Error Parsing {self.filename.name} for ELF header: {self.oELF.ELF_ERRORS[self.oELF.err]}."
+            )
             return
-        self.oSectionHeaderCompressedImage, self.oSectionHeaderEmbeddedMD5, self.oSectionHeaderCWStrings = self.ExtractSections(self.oELF)
+        (
+            self.oSectionHeaderCompressedImage,
+            self.oSectionHeaderEmbeddedMD5,
+            self.oSectionHeaderCWStrings,
+        ) = self.ExtractSections(self.oELF)
         if self.oSectionHeaderEmbeddedMD5 is not None:
-            self.embeddedMD5 = self.ExtractEmbeddedMD5(self.oSectionHeaderEmbeddedMD5.sectionData)
+            self.embeddedMD5 = self.ExtractEmbeddedMD5(
+                self.oSectionHeaderEmbeddedMD5.sectionData
+            )
         if self.oSectionHeaderCWStrings is not None:
-            self.oCWStrings = impf.cCiscoCWStrings(self.oSectionHeaderCWStrings.sectionData)
+            self.oCWStrings = impf.cCiscoCWStrings(
+                self.oSectionHeaderCWStrings.sectionData
+            )
         md5 = hashlib.md5()
         index = 0
         for oSectionHeader in self.oELF.sections:
-            if index != 3 and index != 4:
+            if index not in (3, 4):
                 md5.update(oSectionHeader.sectionData)
             index += 1
         self.calculatedMD5 = md5.hexdigest()
         if self.oSectionHeaderCompressedImage is None:
-            print('MAGIC number FEEDFACE not found')
-            self.error = 4
+            print("MAGIC number FEEDFACE not found")
+            self.err = 4
             return
-        (self.sizeUncompressed,
-         self.sizeCompressed,
-         self.checksumCompressed,
-         self.checksumUncompressed) = struct.unpack('>IIII', self.oSectionHeaderCompressedImage.sectionData[len(impf.cCiscoMagic.STR_FEEDFACE):len(impf.cCiscoMagic.STR_FEEDFACE) + 4*4])
-        zipData = self.oSectionHeaderCompressedImage.sectionData[len(impf.cCiscoMagic.STR_FEEDFACE) + 4*4:len(impf.cCiscoMagic.STR_FEEDFACE) + 4*4 + self.sizeCompressed]
+        (
+            self.sizeUncompressed,
+            self.sizeCompressed,
+            self.checksumCompressed,
+            self.checksumUncompressed,
+        ) = struct.unpack(
+            ">IIII",
+            self.oSectionHeaderCompressedImage.sectionData[
+                len(impf.cCiscoMagic.STR_FEEDFACE) : len(impf.cCiscoMagic.STR_FEEDFACE)
+                + 4 * 4
+            ],
+        )
+        zipData = self.oSectionHeaderCompressedImage.sectionData[
+            len(impf.cCiscoMagic.STR_FEEDFACE)
+            + 4 * 4 : len(impf.cCiscoMagic.STR_FEEDFACE)
+            + 4 * 4
+            + self.sizeCompressed
+        ]
         self.calculatedChecksumCompressed = cIOSImage.CalcChecksum(zipData)
         try:
-            oZipFile = zipfile.ZipFile(BytesIO(zipData))
-            try:
-                names = oZipFile.namelist()
-            except:
-                self.error = 6
-                print('Error retrieving ZIP namelist')
-                oZipFile = None
-        except:
-            self.error = 5
-            print('Error parsing ZIP section')
-            oZipFile = None
-        if oZipFile is not None:
-            if len(names) == 0:
-                self.error = 7
-                print('Error: no file found in ZIP')
-            elif len(names) == 1:
-                self.imageUncompressedName = names[0]
-            else:
-                self.error = 8
-                print('More than one file found in ZIP')
-                print(','.join(names))
-            if self.imageUncompressedName is not None:
+            with zipfile.ZipFile(BytesIO(zipData)) as oZipFile:
                 try:
-                    self.imageUncompressed = oZipFile.open(self.imageUncompressedName).read()
+                    names = oZipFile.namelist()
                 except:
-                    self.error = 9
-                    print('Error decompressing ZIP section')
-                if self.imageUncompressed is not None:
-                    self.calculatedChecksumUncompressed = cIOSImage.CalcChecksum(self.imageUncompressed)
+                    self.err = 6
+                    print("Error retrieving ZIP namelist")
+                else:
+                    if len(names) == 0:
+                        self.err = 7
+                        print("Error: no file found in ZIP")
+                    elif len(names) == 1:
+                        self.imageUncompressedName = names[0]
+                    else:
+                        self.err = 8
+                        print("More than one file found in ZIP")
+                        print(",".join(names))
+
+                    if self.imageUncompressedName is not None:
+                        try:
+                            with oZipFile.open(self.imageUncompressedName) as f:
+                                self.imageUncompressed = f.read()
+                        except:
+                            self.err = 9
+                            print("Error decompressing ZIP section")
+
+                        if self.imageUncompressed is not None:
+                            self.calculatedChecksumUncompressed = (
+                                cIOSImage.CalcChecksum(self.imageUncompressed)
+                            )
+        except:
+            self.err = 5
+            print("Error parsing ZIP section")
 
     def Print(self):
-        print('IOS Image Metadata: {}\n'.format(os.path.basename(self.filename)))
-        if self.oCWStrings is not None and self.oCWStrings.error is None:
-            for key in [b'CW_VERSION', b'CW_FAMILY', b'CW_FEATURE', b'CW_IMAGE', b'CW_SYSDESCR']:
+        print(f"IOS Image Metadata: {os.path.basename(self.filename)}\n")
+        if self.oCWStrings is not None and self.oCWStrings.err is None:
+            for key in (
+                b"CW_VERSION",
+                b"CW_FAMILY",
+                b"CW_FEATURE",
+                b"CW_IMAGE",
+                b"CW_SYSDESCR",
+            ):
                 if key in self.oCWStrings.dCWStrings:
-                    print('{}:{}{}'.format(key.decode('utf-8'), ' ' * (22 - len(key)), self.oCWStrings.dCWStrings[key].decode('utf-8')))
-        booleanValue = {True: 'identical', False: 'DIFFERENT'}
-        if self.oELF.error == 0:
-            print('File MD5:              {}'.format(self.fileMD5))
-            print('Entry point:           0x{:08X}'.format(self.oELF.addressEntry))
-            print('Number of sections:    {:d}'.format(self.oELF.countSections))
-            print('Embedded MD5:          {}'.format(uf.cn(self.embeddedMD5)))
-            print('Calculated MD5:        {}'.format(uf.cn(self.calculatedMD5)))
-            print('Compressed size:       {:d}'.format(uf.cn(self.sizeCompressed)))
-            print('Checksum compressed:   0x{:08X}'.format(uf.cn(self.checksumCompressed)))
-            print('Calculated checksum:   0x{:08X} ({})'.format(uf.cn(self.calculatedChecksumCompressed), booleanValue[self.checksumCompressed == self.calculatedChecksumCompressed]))
-            print('Uncompressed size:     {:d}'.format(uf.cn(self.sizeUncompressed)))
-            print('Image name:            {}'.format(uf.cn(self.imageUncompressedName)))
-            print('Checksum uncompressed: 0x{:08X}'.format(uf.cn(self.checksumUncompressed)))
-            print('Calculated checksum:   0x{:08X} ({})'.format(uf.cn(self.calculatedChecksumUncompressed), booleanValue[self.checksumUncompressed == self.calculatedChecksumUncompressed]))
+                    print(
+                        f'{key.decode("utf-8")}:{' ' * (22 - len(key))}{self.oCWStrings.dCWStrings[key].decode("utf-8")}'
+                    )
+        booleanValue = {True: "identical", False: "DIFFERENT"}
+        if self.oELF.err == 0:
+            print(f"File MD5:              {self.fileMD5}")
+            print(f"Entry point:           0x{self.oELF.addressEntry:08X}")
+            print(f"Number of sections:    {self.oELF.countSections:d}")
+            print(f"Embedded MD5:          {uf.cn(self.embeddedMD5)}")
+            print(f"Calculated MD5:        {uf.cn(self.calculatedMD5)}")
+            print(f"Compressed size:       {uf.cn(self.sizeCompressed):d}")
+            print(f"Checksum compressed:   0x{uf.cn(self.checksumCompressed):08X}")
+            print(
+                f"Calculated checksum:   0x{uf.cn(self.calculatedChecksumCompressed):08X} ({booleanValue[self.checksumCompressed == self.calculatedChecksumCompressed]})"
+            )
+            print(f"Uncompressed size:     {uf.cn(self.sizeUncompressed):d}")
+            print(f"Image name:            {uf.cn(self.imageUncompressedName)}")
+            print(f"Checksum uncompressed: 0x{uf.cn(self.checksumUncompressed):08X}")
+            print(
+                f"Calculated checksum:   0x{uf.cn(self.calculatedChecksumCompressed):08X} ({booleanValue[self.checksumUncompressed == self.calculatedChecksumUncompressed]})"
+            )
 
     def Compress(self, filenameUncompressedImage, imageUncompressed):
-        oStringIO = BytesIO()
-        oZipFile = zipfile.ZipFile(oStringIO, 'w')
-        oZipInfo = zipfile.ZipInfo(filenameUncompressedImage)
+        oZipInfo = zipfile.ZipInfo(
+            filenameUncompressedImage.replace("\\", "/")
+        )  ## Should normalize Windows / alternate OS slashes for ZIP
         oZipInfo.compress_type = zipfile.ZIP_DEFLATED
-        oZipFile.writestr(oZipInfo, imageUncompressed)
-        oZipFile.close()
-        result = oStringIO.getvalue()
-        oStringIO.close()
-        result = impf.cCiscoMagic.STR_FEEDFACE + struct.pack('>IIII',
-                                                             len(imageUncompressed),
-                                                             len(result),
-                                                             cIOSImage.CalcChecksum(result),
-                                                             cIOSImage.CalcChecksum(imageUncompressed)) + result
-        return result
+        oStringIO = BytesIO()
+        with zipfile.ZipFile(oStringIO, "w") as oZipFile:
+            oZipFile.writestr(oZipInfo, imageUncompressed)
+        zipData = oStringIO.getvalue()
+        return (
+            impf.cCiscoMagic.STR_FEEDFACE
+            + struct.pack(
+                ">IIII",
+                len(imageUncompressed),
+                len(zipData),
+                cIOSImage.CalcChecksum(zipData),
+                cIOSImage.CalcChecksum(imageUncompressed),
+            )
+            + zipData
+        )
 
     def Pack(self, filenameUncompressedImage, imageUncompressed):
         if self.oELF.countSections == 6:
-            SFX = (self.oELF.sections[0].sectionData
-                   + self.oELF.sections[1].sectionData
-                   + self.oELF.sections[2].sectionData
-                   + self.oELF.sections[3].sectionData)
-            imageCompressed = self.Compress(filenameUncompressedImage, imageUncompressed)
+            SFX = (
+                self.oELF.sections[0].sectionData
+                + self.oELF.sections[1].sectionData
+                + self.oELF.sections[2].sectionData
+                + self.oELF.sections[3].sectionData
+            )
+            imageCompressed = self.Compress(
+                filenameUncompressedImage, imageUncompressed
+            )
             imageNew = self.oELF.GetHeader()
-            imageNew += self.oELF.GetProgramHeader(len(SFX) + len(imageCompressed) + len(self.oELF.sections[4].sectionData))
+            imageNew += self.oELF.GetProgramHeader(
+                len(SFX) + len(imageCompressed) + len(self.oELF.sections[4].sectionData)
+            )
             imageNew += self.oELF.sections[0].GetHeader()
             imageNew += self.oELF.sections[1].GetHeader()
             imageNew += self.oELF.sections[2].GetHeader()
             imageNew += self.oELF.sections[3].GetHeader()
             lengthHeaders = len(imageNew) + 2 * len(self.oELF.sections[4].GetHeader())
-            imageNew += self.oELF.sections[4].GetHeader(lengthHeaders + len(SFX) + len(imageCompressed), len(self.oELF.sections[4].sectionData))
-            imageNew += self.oELF.sections[5].GetHeader(lengthHeaders + len(SFX), len(imageCompressed))
+            imageNew += self.oELF.sections[4].GetHeader(
+                lengthHeaders + len(SFX) + len(imageCompressed),
+                len(self.oELF.sections[4].sectionData),
+            )
+            imageNew += self.oELF.sections[5].GetHeader(
+                lengthHeaders + len(SFX), len(imageCompressed)
+            )
             imageNew += SFX
             imageNew += imageCompressed
             imageNew += self.oELF.sections[4].sectionData
             return imageNew
-        elif self.oELF.countSections == 7:
-            SFX = (self.oELF.sections[0].sectionData
-                   + self.oELF.sections[1].sectionData
-                   + self.oELF.sections[2].sectionData
-                   + self.oELF.sections[3].sectionData
-                   + self.oELF.sections[4].sectionData)
-            imageCompressed = self.Compress(filenameUncompressedImage, imageUncompressed)
+        if self.oELF.countSections == 7:
+            SFX = (
+                self.oELF.sections[0].sectionData
+                + self.oELF.sections[1].sectionData
+                + self.oELF.sections[2].sectionData
+                + self.oELF.sections[3].sectionData
+                + self.oELF.sections[4].sectionData
+            )
+            imageCompressed = self.Compress(
+                filenameUncompressedImage, imageUncompressed
+            )
             imageNew = self.oELF.GetHeader()
-            imageNew += self.oELF.GetProgramHeader(len(SFX) + len(imageCompressed) + len(self.oELF.sections[5].sectionData))
+            imageNew += self.oELF.GetProgramHeader(
+                len(SFX) + len(imageCompressed) + len(self.oELF.sections[5].sectionData)
+            )
             imageNew += self.oELF.sections[0].GetHeader()
             imageNew += self.oELF.sections[1].GetHeader()
             imageNew += self.oELF.sections[2].GetHeader()
             imageNew += self.oELF.sections[3].GetHeader()
             imageNew += self.oELF.sections[4].GetHeader()
             lengthHeaders = len(imageNew) + 2 * len(self.oELF.sections[5].GetHeader())
-            imageNew += self.oELF.sections[5].GetHeader(lengthHeaders + len(SFX) + len(imageCompressed), len(self.oELF.sections[5].sectionData))
-            imageNew += self.oELF.sections[6].GetHeader(lengthHeaders + len(SFX), len(imageCompressed))
+            imageNew += self.oELF.sections[5].GetHeader(
+                lengthHeaders + len(SFX) + len(imageCompressed),
+                len(self.oELF.sections[5].sectionData),
+            )
+            imageNew += self.oELF.sections[6].GetHeader(
+                lengthHeaders + len(SFX), len(imageCompressed)
+            )
             imageNew += SFX
             imageNew += imageCompressed
             imageNew += self.oELF.sections[5].sectionData
             return imageNew
-        else:
-            return None
+        return None
 
     def ImageUncompressedIDAPro(self):
-        newImage = self.imageUncompressed[0:18] + '\x00\x14'.encode() + self.imageUncompressed[20:]  # Set machine to PowerPC 0x14
+        newImage = (
+            self.imageUncompressed[0:18]
+            + "\x00\x14".encode()
+            + self.imageUncompressed[20:]
+        )  # Set machine to PowerPC 0x14
         return newImage
 
 
-class cMD5Database():
+class cMD5Database:
 
     def __init__(self, directoryCSVFiles, scanArg):
         self.dMD5Database = {}
         countDoubles = 0
         countMD5EmptyString = 0
-        for filenameCSV in glob.glob(os.path.join(directoryCSVFiles, '*.csv')):
+        for filenameCSV in glob.glob(os.path.join(directoryCSVFiles, "*.csv")):
             result = self.AddCSV(filenameCSV)
             countDoubles += result[0]
             countMD5EmptyString += result[1]
         if not scanArg:
-            print('{} unique entries in all MD5 databases, {:d} doubles, of which {} are empty strings'.format(len(self.dMD5Database), countDoubles, countMD5EmptyString))
+            print(
+                f"{len(self.dMD5Database)} unique entries in all MD5 databases, {countDoubles} doubles, of which {countMD5EmptyString} are empty strings"
+            )
 
     def AddCSV(self, filenameCSV):
         countDoubles = 0
         countMD5EmptyString = 0
-        md5EmptyString = hashlib.md5(b'').hexdigest()
+        md5EmptyString = hashlib.md5(b"").hexdigest()
         basename = os.path.basename(filenameCSV)
-        for line in open(filenameCSV, 'r').readlines():
-            md5hash, filename, filedate = line.strip('\n').split(',')
-            md5hash = md5hash.lower()
-            if md5hash in self.dMD5Database:
-                if md5hash == md5EmptyString:
-                    countMD5EmptyString += 1
-                countDoubles += 1
-            else:
-                self.dMD5Database[md5hash] = (basename, filename.strip(' '), filedate.strip(' '))
+        with open(filenameCSV, "r", encoding="utf-8") as f:
+            for line in f:
+                md5hash, filename, filedate = line.strip().split(",")
+                md5hash = md5hash.lower()
+                if md5hash in self.dMD5Database:
+                    countDoubles += 1
+                    if md5hash == md5EmptyString:
+                        countMD5EmptyString += 1
+                else:
+                    self.dMD5Database[md5hash] = (
+                        basename,
+                        filename.strip(),
+                        filedate.strip(),
+                    )
         return (countDoubles, countMD5EmptyString)
 
     def Find(self, md5hash):
         if md5hash in self.dMD5Database:
             return self.dMD5Database[md5hash]
-        else:
-            return None, None, None
+        return None, None, None
