@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 __description__ = "Network Appliance Forensic Toolkit - Generic Frame Extraction"
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 __original_author__ = "Didier Stevens"
 __current_authors__ = "@digitalsleuth and @G-K7"
-__date__ = "2026/06/15"
+__date__ = "2026/06/29"
 
 import struct
 import naft.modules.impf as impf
